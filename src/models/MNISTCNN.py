@@ -188,7 +188,7 @@ def train_minist_cnn(model_save_path="../data/model/mnist_cnn"):
 
 
 # 修改微调函数逻辑
-def fine_tune_minist_cnn(parameters, train_loader, num_epochs=5, device='cpu', lr=1e-5):
+def fine_tune_mnist_cnn(parameters, train_loader, num_epochs=5, device='cpu', lr=1e-5):
     """
     微调模型参数
     :param parameters: 初始模型参数字典
