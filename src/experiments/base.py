@@ -7,12 +7,12 @@ import re
 from datetime import datetime
 import os
 
+from src.algorithms.Stackelberg import Stackelberg
 from src.algorithms.GaleShapley import GaleShapley
 from src.models.MNISTCNN import MNISTCNN, fine_tune_mnist_cnn
 from src.roles.ComputingCenter import ComputingCenter
 from src.roles.DataOwner import DataOwner
 from src.roles.ModelOwner import ModelOwner
-from src.algorithms.Stackelberg import Stackelberg
 from src.utils.MNISTUtil import MNISTUtil
 from src.global_variable import parent_path, Lambda, Rho, Alpha, Epsilon, adjustment_literation
 
@@ -230,11 +230,9 @@ def match_data_owners_to_cpc(xn_list, ComputingCenters, dataowners):
     :return:
     """
     proposals = GaleShapley.make_proposals(SigmaM, N)
-
     preferences = GaleShapley.make_preferences(xn_list, ComputingCenters, Rho, dataowners)
-
-    # 调用Gale-Shapley算法
     matching = GaleShapley.gale_shapley(proposals, preferences)
+
     MNISTUtil.print_and_log(matching)
     return matching
 
@@ -259,13 +257,13 @@ def submit_data_to_cpc(matching, dataowners, ComputingCenters, xn_list):
         MNISTUtil.print_and_log(f"DataOwner{dataowner_index + 1} 把数据交给 ComputingCenter{ComputingCenter_index + 1}")
 
         MNISTUtil.dataowner_pass_data_to_cpc(dataowners[dataowner_index],
-                                                         ComputingCenters[ComputingCenter_index],
-                                                         xn_list[dataowner_index])
+                                             ComputingCenters[ComputingCenter_index],
+                                             xn_list[dataowner_index])
 
 
 # 使用ComputingCenter进行模型训练和全局模型的更新
 def train_model_with_cpc(matching, ComputingCenters, test_images, test_labels, literation, avg_f_list,
-                                     adjustment_literation):
+                         adjustment_literation):
     """
     使用ComputingCenter进行模型训练和全局模型的更新
     :param matching:
@@ -282,7 +280,8 @@ def train_model_with_cpc(matching, ComputingCenters, test_images, test_labels, l
         ComputingCenter_match = re.search(r'\d+$', item[1])
         ComputingCenter_index = int(ComputingCenter_match.group()) - 1
 
-        MNISTUtil.print_and_log(f"{item[1]}调整模型中, 本轮训练的数据量为：{len(ComputingCenters[ComputingCenter_index].imgData) :.2f} :")
+        MNISTUtil.print_and_log(
+            f"{item[1]}调整模型中, 本轮训练的数据量为：{len(ComputingCenters[ComputingCenter_index].imgData) :.2f} :")
         if len(ComputingCenters[ComputingCenter_index].imgData) == 0:
             MNISTUtil.print_and_log("数据量为0，跳过此轮调整")
             continue
@@ -315,7 +314,7 @@ if __name__ == "__main__":
     for n in range(1, 101):
         MNISTUtil.print_and_log(f"========================= 客户端数量: {n + 1} =========================")
 
-        MNISTUtil.print_and_log(                                "---------------------------------- 定义参数值 ----------------------------------")
+        MNISTUtil.print_and_log("---------------------------------- 定义参数值 ----------------------------------")
         Lambda, Rho, Alpha, Epsilon, N, M, SigmaM = define_parameters(Lambda=Lambda, Rho=Rho, Alpha=Alpha,
                                                                       Epsilon=Epsilon, M=n + 1, N=n + 1,
                                                                       SigmaM=[1] * (n + 1))
@@ -342,7 +341,8 @@ if __name__ == "__main__":
                 avg_f_list = evaluate_data_quality(dataowners)
                 MNISTUtil.print_and_log("DONE")
 
-            MNISTUtil.print_and_log(f"----- literation {literation + 1}: 计算 ModelOwner 总体支付和 DataOwners 最优数据量 -----")
+            MNISTUtil.print_and_log(
+                f"----- literation {literation + 1}: 计算 ModelOwner 总体支付和 DataOwners 最优数据量 -----")
             xn_list, best_Eta, U_Eta, U_qn = calculate_optimal_payment_and_data(avg_f_list, last_xn_list)
             last_xn_list = xn_list
 
@@ -374,8 +374,8 @@ if __name__ == "__main__":
 
             MNISTUtil.print_and_log(f"----- literation {literation + 1}: 模型训练 -----")
             avg_f_list = train_model_with_cpc(matching, ComputingCenters, test_images, test_labels,
-                                                          literation, avg_f_list,
-                                                          adjustment_literation)
+                                              literation, avg_f_list,
+                                              adjustment_literation)
             MNISTUtil.print_and_log("DONE")
 
             literation += 1

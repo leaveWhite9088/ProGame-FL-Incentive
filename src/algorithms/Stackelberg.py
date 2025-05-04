@@ -1,8 +1,6 @@
 import numpy as np
-from scipy.optimize import minimize
 from src.utils.MNISTUtil import MNISTUtil
-from src.alogorithms.CournotGame import CournotGame
-from src.alogorithms.JointOptimization import JointOptimization
+from src.algorithms.JointOptimization import JointOptimization
 
 class Stackelberg:
     """
@@ -30,8 +28,7 @@ class Stackelberg:
             
         self.q_max_vector = np.array(q_max_vector)
         
-        # 创建古诺博弈求解器和联合优化求解器
-        self.cournot_solver = CournotGame(N, C, q_max_vector)
+        # 创建联合优化求解器
         self.joint_optimizer = JointOptimization(N, C, q_max_vector)
     
     def solve(self):
