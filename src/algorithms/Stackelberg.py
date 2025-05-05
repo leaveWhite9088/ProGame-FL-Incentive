@@ -51,8 +51,21 @@ class Stackelberg:
         # 注意：这已经包含了将数据拥有者响应嵌入到领导者优化中的过程
         p_star, eta_star, q_star, leader_utility = self.joint_optimizer.optimize()
         
-        # 计算各数据拥有者(跟随者)的效用
-        follower_utilities = eta_star * p_star - self.C * np.square(q_star) / 2
+        # 2. 计算各数据拥有者(跟随者)在均衡时的效用
+        S_star_actual = np.sum(p_star * q_star)
+
+        # 检查 S* 是否接近于零以避免除零错误
+        if S_star_actual > 1e-9:  # 使用一个小的正阈值
+            price_at_equilibrium = eta_star / S_star_actual
+            # 计算每个跟随者的效用
+            follower_utilities = q_star * (price_at_equilibrium - self.C)
+        else:
+            # 如果 S* 为零或接近零 (例如 eta*=0 或 q*=0)
+            # 那么 q_n * (price - C_n) 中的 q_n 通常也为零
+            # 因此效用为零
+            follower_utilities = np.zeros(self.N)
+
+        # 3. 计算跟随者总效用
         total_follower_utility = np.sum(follower_utilities)
         
         # 计算社会福利(所有参与者的效用总和)
