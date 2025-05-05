@@ -31,6 +31,9 @@ def define_parameters(Lambda=1, Rho=1, Alpha=1, Epsilon=1, N=5, M=5, SigmaM=[1, 
     :param SigmaM: ComputingCenter的计算呢能力
     :return:
     """
+    # 设置numpy打印选项：禁用截断，单行显示
+    np.set_printoptions(threshold=np.inf, linewidth=np.inf)  # 关键设置
+
     return Lambda, Rho, Alpha, Epsilon, N, M, SigmaM
 
 
@@ -187,25 +190,12 @@ def calculate_optimal_payment_and_data(avg_f_list, last_xn_list):
     # 利用Stackelberg算法，求ModelOwner的支付，DataOwner提供的最优数据量
     stackelberg_solver = Stackelberg(N, Rho*Lambda, avg_f_list)
 
-    # eta_opt, x_opt, U_opt = stackelberg_solver.solve()
+    p_star, eta_star, q_star, leader_utility, follower_utilities = stackelberg_solver.solve()
 
-    # TODO, 这里返回的实际上是qn，这里先拿xn代替
-    p_star, eta_opt, x_opt, U_opt, follower_utilities, social_welfare = stackelberg_solver.solve()
+    # 将q_star转化为x_opt
+    x_opt = [a/b for a,b in zip(q_star, avg_f_list)]
 
-    MNISTUtil.print_and_log("Stackelberg均衡结果：")
-    MNISTUtil.print_and_log(f"ModelOwner的最优Eta = {eta_opt:.4f}")
-    xn_list = []
-    for i, xi in enumerate(x_opt):
-        MNISTUtil.print_and_log(f"DataOwner{i + 1}的最优x_{i + 1} = {xi:.4f}")
-        xn_list.append(xi)
-    MNISTUtil.print_and_log(f"每个DataOwner应该贡献数据比例 xn_list = {xn_list}")
-    MNISTUtil.print_and_log(f"ModelOwner的最大效用 U(Eta) = {U_opt:.4f}")
-
-    # 这里计算 U_Eta 和 U_qn
-    U_Eta = U_opt
-    U_qn = (eta_opt - Lambda * Rho * (sum(xn_list))) / N
-
-    return MNISTUtil.compare_elements(xn_list, last_xn_list), eta_opt, U_Eta, U_qn
+    return MNISTUtil.compare_elements(x_opt, last_xn_list), eta_star, leader_utility, follower_utilities/N
 
 
 # DataOwner结合自身数据质量来算模型贡献，分配ModelOwner的支付
@@ -281,6 +271,7 @@ def train_model_with_cpc(matching, cpcs, test_images, test_labels, literation, a
     """
 
     # 指定轮次的时候要评估数据质量, 其余轮次直接训练即可
+    # FIXME 这里的调整是失效的
     if literation == adjustment_literation:
         MNISTUtil.print_and_log("重新调整fn，进而调整xn、Eta")
         avg_f_list = [0] * N
@@ -340,6 +331,7 @@ def fine_tune_model(cpcs, matching, test_loader, lr=1e-5, device='cpu', num_epoc
 
     # 1. 创建并加载CNN模型
     model = MNISTCNN(num_classes=10).to(device)
+    model.load_model(model_path)
 
     # 2. 获取全局模型参数
     global_params = model.get_parameters()

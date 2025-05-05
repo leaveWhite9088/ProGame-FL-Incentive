@@ -68,20 +68,16 @@ class Stackelberg:
         # 3. 计算跟随者总效用
         total_follower_utility = np.sum(follower_utilities)
         
-        # 计算社会福利(所有参与者的效用总和)
-        social_welfare = leader_utility + total_follower_utility
-        
         # 输出完整的均衡结果
-        MNISTUtil.print_and_log("Stackelberg博弈求解完成")
+        MNISTUtil.print_and_log("Stackelberg博弈求解完成，以下为结果")
         MNISTUtil.print_and_log(f"均衡p: {p_star}")
         MNISTUtil.print_and_log(f"均衡eta: {eta_star:.4f}")
         MNISTUtil.print_and_log(f"均衡q: {q_star}")
         MNISTUtil.print_and_log(f"领导者效用: {leader_utility:.4f}")
         MNISTUtil.print_and_log(f"跟随者总效用: {total_follower_utility:.4f}")
-        MNISTUtil.print_and_log(f"社会福利: {social_welfare:.4f}")
         
         # 可以进一步分析各数据拥有者的个体效用
-        for n in range(self.N):
-            MNISTUtil.print_and_log(f"数据拥有者{n+1}效用: {follower_utilities[n]:.4f}")
+        # for n in range(self.N):
+        #     MNISTUtil.print_and_log(f"数据拥有者{n+1}效用: {follower_utilities[n]:.4f}")
         
-        return p_star, eta_star, q_star, leader_utility, follower_utilities, social_welfare
+        return p_star, eta_star, q_star, leader_utility, follower_utilities

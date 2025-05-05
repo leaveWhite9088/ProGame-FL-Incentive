@@ -110,9 +110,9 @@ class JointOptimization:
         # 模型拥有者最大效用
         leader_utility = -result.fun
         
-        MNISTUtil.print_and_log(f"最优p: {p_optimal}")
-        MNISTUtil.print_and_log(f"最优eta: {eta_optimal:.4f}")
-        MNISTUtil.print_and_log(f"对应的q: {q_optimal}")
-        MNISTUtil.print_and_log(f"模型拥有者最大效用: {leader_utility:.4f}")
+        # MNISTUtil.print_and_log(f"最优p: {p_optimal}")
+        # MNISTUtil.print_and_log(f"最优eta: {eta_optimal:.4f}")
+        # MNISTUtil.print_and_log(f"对应的q: {q_optimal}")
+        # MNISTUtil.print_and_log(f"模型拥有者最大效用: {leader_utility:.4f}")
         
         return p_optimal, eta_optimal, q_optimal, leader_utility

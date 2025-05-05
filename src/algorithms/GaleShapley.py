@@ -101,9 +101,9 @@ class GaleShapley:
         # 使用梯度下降法来优化dm
         dm = cpc.bestDm  # 初始的dm值
         for _ in range(100):  # 最大迭代次数
-            utility_current = cpc.cal_cpc_utility(Rho, sumdm, sumxn, dm)
+            utility_current = cpc.cal_utility(Rho, sumdm, sumxn, dm)
             # 计算效用对dm的梯度
-            gradient = (cpc.cal_cpc_utility(Rho, sumdm, sumxn, dm + 0.001) - utility_current) / 0.001
+            gradient = (cpc.cal_utility(Rho, sumdm, sumxn, dm + 0.001) - utility_current) / 0.001
             # 更新dm值
             dm = dm + learning_rate * gradient
             # # 确保dm值在[0,1]之间
@@ -131,6 +131,7 @@ class GaleShapley:
         data_volume_list = []
         for do in dataowners:
             data_volume_list.append(len(do.imgData))
+
         data_volume_list = [x * y for x, y in zip(data_volume_list, xn_array)]
 
         # 对 bestDm_list 归一化，然后根据这个值确定偏好
@@ -138,6 +139,8 @@ class GaleShapley:
         max_value = max(bestDm_list)
         minVal = min(data_volume_list)
         maxVal = max(data_volume_list)
+
+        print("DEBUG: "+str(bestDm_list))
 
         # normalized_arr 是最优数据量列表
         normalized_lst = [minVal + (x - min_value) * (maxVal - minVal) / (max_value - min_value) for x in bestDm_list]
