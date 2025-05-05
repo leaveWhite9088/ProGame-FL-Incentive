@@ -9,7 +9,8 @@ import os
 
 from src.algorithms.Stackelberg import Stackelberg
 from src.algorithms.GaleShapley import GaleShapley
-from src.models.MNISTCNN import MNISTCNN, fine_tune_mnist_cnn
+from src.models.MNISTCNN import MNISTCNN, evaluate_data_for_dynamic_adjustment, fine_tune_mnist_cnn, \
+    average_models_parameters, update_model_with_parameters
 from src.roles.ComputingCenter import ComputingCenter
 from src.roles.DataOwner import DataOwner
 from src.roles.ModelOwner import ModelOwner
@@ -184,7 +185,12 @@ def calculate_optimal_payment_and_data(avg_f_list, last_xn_list):
     :return:
     """
     # 利用Stackelberg算法，求ModelOwner的支付，DataOwner提供的最优数据量
-    eta_opt, x_opt, U_opt = Stackelberg.find_stackelberg_equilibrium(Alpha, np.array(avg_f_list), Lambda, Rho)
+    stackelberg_solver = Stackelberg(N, Rho*Lambda, avg_f_list)
+
+    # eta_opt, x_opt, U_opt = stackelberg_solver.solve()
+
+    # TODO, 这里返回的实际上是qn，这里先拿xn代替
+    p_star, eta_opt, x_opt, U_opt, follower_utilities, social_welfare = stackelberg_solver.solve()
 
     MNISTUtil.print_and_log("Stackelberg均衡结果：")
     MNISTUtil.print_and_log(f"ModelOwner的最优Eta = {eta_opt:.4f}")
@@ -262,10 +268,9 @@ def submit_data_to_cpc(matching, dataowners, ComputingCenters, xn_list):
 
 
 # 使用ComputingCenter进行模型训练和全局模型的更新
-def train_model_with_cpc(matching, ComputingCenters, test_images, test_labels, literation, avg_f_list,
-                         adjustment_literation):
+def train_model_with_cpc(matching, cpcs, test_images, test_labels, literation, avg_f_list, adjustment_literation):
     """
-    使用ComputingCenter进行模型训练和全局模型的更新
+    使用CPC进行模型训练和全局模型的更新
     :param matching:
     :param dataowners:
     :param test_images:
@@ -274,33 +279,116 @@ def train_model_with_cpc(matching, ComputingCenters, test_images, test_labels, l
     :param avg_f_list:fn的列表
     :return: 第二轮要使用的fn的列表
     """
-    for item in matching.items():
-        dataowner_match = re.search(r'\d+$', item[0])
-        dataowner_index = int(dataowner_match.group()) - 1
-        ComputingCenter_match = re.search(r'\d+$', item[1])
-        ComputingCenter_index = int(ComputingCenter_match.group()) - 1
 
-        MNISTUtil.print_and_log(
-            f"{item[1]}调整模型中, 本轮训练的数据量为：{len(ComputingCenters[ComputingCenter_index].imgData) :.2f} :")
-        if len(ComputingCenters[ComputingCenter_index].imgData) == 0:
+    # 指定轮次的时候要评估数据质量, 其余轮次直接训练即可
+    if literation == adjustment_literation:
+        MNISTUtil.print_and_log("重新调整fn，进而调整xn、Eta")
+        avg_f_list = [0] * N
+        for item in matching.items():
+            dataowner_match = re.search(r'\d+$', item[0])
+            dataowner_index = int(dataowner_match.group()) - 1
+            cpc_match = re.search(r'\d+$', item[1])
+            cpc_index = int(cpc_match.group()) - 1
+
+            MNISTUtil.print_and_log(
+                f"正在评估{item[0]}的数据质量, 本轮评估的样本数据量为：{len(cpcs[cpc_index].imgData) :.2f} :")
+            if len(cpcs[cpc_index].imgData) == 0:
+                MNISTUtil.print_and_log("数据量为0，跳过此轮评估")
+                continue
+
+            train_loader = MNISTUtil.create_data_loader(cpcs[cpc_index].imgData, cpcs[cpc_index].labelData,
+                                                        batch_size=64, shuffle=True)
+            test_loader = MNISTUtil.create_data_loader(test_images, test_labels, batch_size=64, shuffle=False)
+
+            # 准备评估
+            device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+            project_root = get_project_root()
+
+            unitDataLossDiff = evaluate_data_for_dynamic_adjustment(train_loader, test_loader, num_epochs=5,
+                                                                    device=str(device), lr=1e-5,
+                                                                    model_path=f"{project_root}/data/model/mnist_cnn_model")
+            avg_f_list[dataowner_index] = unitDataLossDiff
+
+        MNISTUtil.print_and_log("经过服务器调节后的真实数据质量：")
+        MNISTUtil.print_and_log(f"数据质量列表avg_f_list: {avg_f_list}")
+        MNISTUtil.print_and_log(f"归一化后的数据质量列表avg_f_list:{MNISTUtil.normalize_list(avg_f_list)}")
+
+    # 准备训练
+    project_root = get_project_root()
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    test_loader = MNISTUtil.create_data_loader(test_images, test_labels, batch_size=64, shuffle=False)
+
+    fine_tune_model(cpcs, matching, test_loader, lr=1e-5, device=str(device), num_epochs=5,
+                    model_path=f"{project_root}/data/model/mnist_cnn_model")
+
+    return MNISTUtil.normalize_list(avg_f_list)
+
+
+# 实现联邦学习的模型训练函数
+def fine_tune_model(cpcs, matching, test_loader, lr=1e-5, device='cpu', num_epochs=5, model_path=None):
+    """
+    实现联邦学习的模型训练函数
+    
+    :param model: 要训练的MNISTCNN模型
+    :param train_loader: 训练数据加载器
+    :param test_loader: 测试数据加载器
+    :param num_epochs: 训练轮数
+    :param device: 计算设备 ('cpu' 或 'cuda')
+    :param lr: 学习率
+    :param model_path: 全局模型路径
+    """
+
+    # 1. 创建并加载CNN模型
+    model = MNISTCNN(num_classes=10).to(device)
+
+    # 2. 获取全局模型参数
+    global_params = model.get_parameters()
+
+    # 3. 客户端各自调整 - 使用传入的训练数据进行本地训练，返回训练后的参数
+    updated_params_list = []
+
+    for item in matching.items():
+        cpc_match = re.search(r'\d+$', item[1])
+        cpc_index = int(cpc_match.group()) - 1
+
+        MNISTUtil.print_and_log(f"{item[1]}调整模型中, 本轮训练的数据量为：{len(cpcs[cpc_index].imgData) :.2f} :")
+        if len(cpcs[cpc_index].imgData) == 0:
             MNISTUtil.print_and_log("数据量为0，跳过此轮调整")
             continue
 
-        train_loader = MNISTUtil.create_data_loader(ComputingCenters[ComputingCenter_index].imgData,
-                                                    ComputingCenters[ComputingCenter_index].labelData,
-                                                    batch_size=64, shuffle=True)
-        test_loader = MNISTUtil.create_data_loader(test_images, test_labels, batch_size=64, shuffle=False)
+        train_loader = MNISTUtil.create_data_loader(cpcs[cpc_index].imgData, cpcs[cpc_index].labelData, batch_size=64,
+                                                    shuffle=True)
 
-        # 创建CNN模型
-        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        model = MNISTCNN(num_classes=10).to(device)
+        MNISTUtil.print_and_log("开始本地模型训练...")
+        updated_params = fine_tune_mnist_cnn(
+            parameters=global_params,
+            train_loader=train_loader,
+            num_epochs=num_epochs,
+            device=device,
+            lr=lr
+        )
+        updated_params_list.append(updated_params)
 
-        project_root = get_project_root()
+    # 4. 上传参数 (在实际的联邦学习系统中，这一步会将参数发送到服务器)
+    # 在这个简化实现中，我们直接使用更新后的参数
+    MNISTUtil.print_and_log("本地训练完成，参数已准备好进行聚合")
 
-        fine_tune_model(model, train_loader, test_loader, num_epochs=5, device=str(device),
-                        lr=1e-5, model_path=f"{project_root}/data/model/mnist_cnn_model")
+    # 5. 合并参数 (实际联邦学习中，服务器会收集多个客户端的参数并合并)
+    avg_params = average_models_parameters(updated_params_list)
+    MNISTUtil.print_and_log("参数聚合完成")
 
-    return MNISTUtil.normalize_list(avg_f_list)
+    # 6. 选择更新 - 评估合并后的参数，如果性能更好则更新全局模型
+    MNISTUtil.print_and_log("评估聚合后的模型参数...")
+    update_model_with_parameters(
+        model=model,
+        parameters=avg_params,
+        test_loader=test_loader,
+        device=device,
+        force_update=False,
+        model_save_path=model_path
+    )
+
+    MNISTUtil.print_and_log("模型更新流程完成")
 
 
 if __name__ == "__main__":
@@ -311,7 +399,7 @@ if __name__ == "__main__":
     U_qn_list = []
 
     # 从这里开始进行不同数量客户端的循环 (前闭后开)
-    for n in range(1, 101):
+    for n in range(9, 100):
         MNISTUtil.print_and_log(f"========================= 客户端数量: {n + 1} =========================")
 
         MNISTUtil.print_and_log("---------------------------------- 定义参数值 ----------------------------------")

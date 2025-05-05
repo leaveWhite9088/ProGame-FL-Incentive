@@ -80,12 +80,10 @@ class MNISTCNN(nn.Module):
 
                 # 每 100 个 batch 输出一次损失
                 if batch_idx % 100 == 0:
-                    MNISTUtil.print_and_log(parent_path,
-                                            f"Epoch [{epoch + 1}/{num_epochs}], Batch [{batch_idx + 1}/{len(train_loader)}], Loss: {loss.item():.4f}")
+                    MNISTUtil.print_and_log(f"Epoch [{epoch + 1}/{num_epochs}], Batch [{batch_idx + 1}/{len(train_loader)}], Loss: {loss.item():.4f}")
 
             # 每个 epoch 结束时输出平均损失
-            MNISTUtil.print_and_log(parent_path,
-                                    f"Epoch {epoch + 1} completed. Average Loss: {running_loss / len(train_loader):.4f}")
+            MNISTUtil.print_and_log(f"Epoch {epoch + 1} completed. Average Loss: {running_loss / len(train_loader):.4f}")
 
         if model_save_path is not None:
             # 保存最终模型
@@ -320,3 +318,78 @@ def update_model_with_parameters(model, parameters, test_loader, device='cpu', f
     else:
         MNISTUtil.print_and_log(
             f"新准确率 ({new_accuracy * 100:.2f}%) 不优于当前准确率 ({model.acc * 100:.2f}%)，保持原模型")
+
+
+# 动态调整轮次的评价函数
+def evaluate_data_for_dynamic_adjustment(train_loader, test_loader, num_epochs=5, device='cpu', lr=1e-5,
+                                         model_path=None):
+    """
+        动态调整轮次的评价函数
+        :param model: 已训练的CNN模型
+        :param train_loader: 训练数据加载器，其中包含数据
+        :param criterion: 损失函数
+        :param optimizer: 优化器
+        :param num_epochs: 训练的轮数
+        :param device: 计算设备 ('cpu' 或 'cuda')
+        :param lr: 微调时的学习率
+        :param model_save_path: 保存模型的路径，默认不保存
+        :return: 微调后的模型
+        """
+
+    # 创建加载预训练模型权重（如果有保存的模型）
+    model = MNISTCNN(num_classes=10).to(device)
+    model.load_model(model_path)  # 加载先前保存的模型
+
+    # 将模型移动到指定设备
+    model.to(device)
+
+    # 评估模型
+    MNISTUtil.print_and_log("原模型评估：")
+    model.evaluate(test_loader, device=str(device))
+
+    # 定义损失函数和优化器
+    criterion = nn.CrossEntropyLoss()
+    optimizer = optim.Adam(model.parameters(), lr=0.001)
+
+    # 设置新的学习率（如果需要微调时设置更小的学习率）
+    for param_group in optimizer.param_groups:
+        param_group['lr'] = lr
+
+    # 开始训练
+    model.train()  # 设置模型为训练模式
+
+    for epoch in range(num_epochs):
+        running_loss = 0.0
+        for inputs, labels in train_loader:
+            inputs, labels = inputs.to(device), labels.to(device)
+
+            # 前向传播
+            outputs = model(inputs)
+            loss = criterion(outputs, labels)
+
+            # 反向传播
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+
+            # 累加损失
+            running_loss += loss.item()
+
+        MNISTUtil.print_and_log(f"Epoch {epoch + 1}/{num_epochs}, Loss: {running_loss / len(train_loader):.4f}")
+
+        # 记录loss，用于计算loss差
+        if epoch == 0:
+            first_epoch_loss = running_loss / len(train_loader)
+
+        if epoch == num_epochs - 1:
+            last_epoch_loss = running_loss / len(train_loader)
+
+    MNISTUtil.print_and_log("新模型评估：")
+    model.evaluate(test_loader, device=str(device))
+    MNISTUtil.print_and_log("loss差为：")
+    MNISTUtil.print_and_log(first_epoch_loss - last_epoch_loss)
+    MNISTUtil.print_and_log("单位数据loss差为：")
+    unitDataLossDiff = (first_epoch_loss - last_epoch_loss) / len(train_loader.dataset)
+    MNISTUtil.print_and_log(unitDataLossDiff)
+
+    return unitDataLossDiff

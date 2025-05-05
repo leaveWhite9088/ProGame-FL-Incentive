@@ -45,18 +45,21 @@ class JointOptimization:
         # 定义模型拥有者目标函数: U_M = sum(p_n * q_n) - eta
         def objective_function(variables):
             # 变量包括: [p_1, ..., p_(N-1), eta]
-            # 最后一个p通过约束条件确定: p_N = 1 - sum(p_1, ..., p_(N-1))
             p_partial = variables[:-1]
             eta = variables[-1]
+            
+            # 严格检查eta是否为正数
+            if eta <= 1e-6:  # 使用一个小的正数作为阈值
+                return 1e10  # 返回一个很大的惩罚值
             
             # 构建完整的p向量
             p_vector = np.zeros(self.N)
             p_vector[:self.N-1] = p_partial
             p_vector[self.N-1] = 1 - np.sum(p_partial)
             
-            # 如果p_N为负，则这不是有效的解
-            if p_vector[self.N-1] < 0:
-                return 1e10  # 返回一个很大的值作为惩罚
+            # 检查p值的约束条件
+            if p_vector[self.N-1] < 0 or np.any(p_vector < 0):
+                return 1e10  # 返回一个很大的惩罚值
             
             # 计算对应于(p,eta)的数据拥有者最优响应q
             q_star_vector = self.cournot_solver.compute_equilibrium(p_vector, eta)
