@@ -99,7 +99,7 @@ class GaleShapley:
     @staticmethod
     def update_bestDm(cpc, Rho, sumdm, sumxn, xn_array, learning_rate=0.01):
         # 使用梯度下降法来优化dm
-        dm = cpc.bestDm  # 初始的dm值
+        dm = cpc.bestDm  # 初始的dm值ni
         for _ in range(100):  # 最大迭代次数
             utility_current = cpc.cal_utility(Rho, sumdm, sumxn, dm)
             # 计算效用对dm的梯度

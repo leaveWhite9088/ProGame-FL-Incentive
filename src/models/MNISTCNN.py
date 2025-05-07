@@ -319,6 +319,8 @@ def update_model_with_parameters(model, parameters, test_loader, device='cpu', f
         MNISTUtil.print_and_log(
             f"新准确率 ({new_accuracy * 100:.2f}%) 不优于当前准确率 ({model.acc * 100:.2f}%)，保持原模型")
 
+    return new_accuracy
+
 
 # 动态调整轮次的评价函数
 def evaluate_data_for_dynamic_adjustment(train_loader, test_loader, num_epochs=5, device='cpu', lr=1e-5,

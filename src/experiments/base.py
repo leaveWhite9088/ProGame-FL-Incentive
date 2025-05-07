@@ -188,14 +188,14 @@ def calculate_optimal_payment_and_data(avg_f_list, last_xn_list):
     :return:
     """
     # 利用Stackelberg算法，求ModelOwner的支付，DataOwner提供的最优数据量
-    stackelberg_solver = Stackelberg(N, Rho*Lambda, avg_f_list)
+    stackelberg_solver = Stackelberg(N, Rho * Lambda, avg_f_list)
 
     p_star, eta_star, q_star, leader_utility, follower_utilities = stackelberg_solver.solve()
 
     # 将q_star转化为x_opt
-    x_opt = [a/b for a,b in zip(q_star, avg_f_list)]
+    x_opt = [a / b for a, b in zip(q_star, avg_f_list)]
 
-    return MNISTUtil.compare_elements(x_opt, last_xn_list), eta_star, leader_utility, follower_utilities/N
+    return MNISTUtil.compare_elements(x_opt, last_xn_list), p_star, eta_star, leader_utility, follower_utilities / N
 
 
 # DataOwner结合自身数据质量来算模型贡献，分配ModelOwner的支付
@@ -234,13 +234,14 @@ def match_data_owners_to_cpc(xn_list, ComputingCenters, dataowners):
 
 
 # DataOwner向ComputingCenter提交数据
-def submit_data_to_cpc(matching, dataowners, ComputingCenters, xn_list):
+def submit_data_to_cpc(matching, dataowners, ComputingCenters, xn_list, pn_list):
     """
     DataOwner按照xn_list中约定的比例向ComputingCenter提交数据
     :param matching:
     :param dataowners:
     :param ComputingCenters:
     :param xn_list: 需要提交的数据的比例
+    :param pn_list: 选择比例
     :return:
     """
     for item in matching.items():
@@ -252,13 +253,16 @@ def submit_data_to_cpc(matching, dataowners, ComputingCenters, xn_list):
 
         MNISTUtil.print_and_log(f"DataOwner{dataowner_index + 1} 把数据交给 ComputingCenter{ComputingCenter_index + 1}")
 
+        data_rate_list = [a * b for a, b in zip(xn_list, pn_list)]
+
         MNISTUtil.dataowner_pass_data_to_cpc(dataowners[dataowner_index],
                                              ComputingCenters[ComputingCenter_index],
-                                             xn_list[dataowner_index])
+                                             data_rate_list[dataowner_index])
 
 
 # 使用ComputingCenter进行模型训练和全局模型的更新
-def train_model_with_cpc(matching, cpcs, test_images, test_labels, literation, avg_f_list, adjustment_literation):
+def train_model_with_cpc(matching, cpcs, test_images, test_labels, literation, avg_f_list, adjustment_literation,
+                         force_update):
     """
     使用CPC进行模型训练和全局模型的更新
     :param matching:
@@ -309,14 +313,16 @@ def train_model_with_cpc(matching, cpcs, test_images, test_labels, literation, a
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     test_loader = MNISTUtil.create_data_loader(test_images, test_labels, batch_size=64, shuffle=False)
 
-    fine_tune_model(cpcs, matching, test_loader, lr=1e-5, device=str(device), num_epochs=5,
-                    model_path=f"{project_root}/data/model/mnist_cnn_model")
+    new_accuracy = fine_tune_model(cpcs, matching, test_loader, lr=1e-5, device=str(device), num_epochs=5,
+                                   force_update=force_update,
+                                   model_path=f"{project_root}/data/model/mnist_cnn_model")
 
-    return MNISTUtil.normalize_list(avg_f_list)
+    return MNISTUtil.normalize_list(avg_f_list), new_accuracy
 
 
 # 实现联邦学习的模型训练函数
-def fine_tune_model(cpcs, matching, test_loader, lr=1e-5, device='cpu', num_epochs=5, model_path=None):
+def fine_tune_model(cpcs, matching, test_loader, lr=1e-5, device='cpu', num_epochs=5, force_update=False,
+                    model_path=None):
     """
     实现联邦学习的模型训练函数
     
@@ -371,16 +377,17 @@ def fine_tune_model(cpcs, matching, test_loader, lr=1e-5, device='cpu', num_epoc
 
     # 6. 选择更新 - 评估合并后的参数，如果性能更好则更新全局模型
     MNISTUtil.print_and_log("评估聚合后的模型参数...")
-    update_model_with_parameters(
+    new_accuracy = update_model_with_parameters(
         model=model,
         parameters=avg_params,
         test_loader=test_loader,
         device=device,
-        force_update=False,
+        force_update=force_update,
         model_save_path=model_path
     )
 
     MNISTUtil.print_and_log("模型更新流程完成")
+    return new_accuracy
 
 
 if __name__ == "__main__":
@@ -390,8 +397,11 @@ if __name__ == "__main__":
     U_Eta_list = []
     U_qn_list = []
 
+    # 记录精确度
+    accuracy_list = []
+
     # 从这里开始进行不同数量客户端的循环 (前闭后开)
-    for n in range(9, 100):
+    for n in [9]:
         MNISTUtil.print_and_log(f"========================= 客户端数量: {n + 1} =========================")
 
         MNISTUtil.print_and_log("---------------------------------- 定义参数值 ----------------------------------")
@@ -423,7 +433,7 @@ if __name__ == "__main__":
 
             MNISTUtil.print_and_log(
                 f"----- literation {literation + 1}: 计算 ModelOwner 总体支付和 DataOwners 最优数据量 -----")
-            xn_list, best_Eta, U_Eta, U_qn = calculate_optimal_payment_and_data(avg_f_list, last_xn_list)
+            xn_list, pn_list, best_Eta, U_Eta, U_qn = calculate_optimal_payment_and_data(avg_f_list, last_xn_list)
             last_xn_list = xn_list
 
             # 只有在调整轮次之后的轮次才记录
@@ -449,13 +459,17 @@ if __name__ == "__main__":
                 MNISTUtil.print_and_log("DONE")
 
             MNISTUtil.print_and_log(f"----- literation {literation + 1}: DataOwner 向 ComputingCenter 提交数据 -----")
-            submit_data_to_cpc(matching, dataowners, ComputingCenters, xn_list)
+            submit_data_to_cpc(matching, dataowners, ComputingCenters, xn_list, pn_list)
             MNISTUtil.print_and_log("DONE")
 
             MNISTUtil.print_and_log(f"----- literation {literation + 1}: 模型训练 -----")
-            avg_f_list = train_model_with_cpc(matching, ComputingCenters, test_images, test_labels,
-                                              literation, avg_f_list,
-                                              adjustment_literation)
+            avg_f_list, new_accuracy = train_model_with_cpc(matching, ComputingCenters, test_images, test_labels,
+                                                            literation, avg_f_list, adjustment_literation,
+                                                            force_update=True)
+            # 构建精准度列表
+            accuracy_list.append(new_accuracy)
+            MNISTUtil.print_and_log(f"accuracy_list: {accuracy_list}")
+
             MNISTUtil.print_and_log("DONE")
 
             literation += 1
