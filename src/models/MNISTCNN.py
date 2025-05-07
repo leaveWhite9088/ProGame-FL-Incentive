@@ -284,6 +284,31 @@ def update_model_with_parameters(model, parameters, test_loader, device='cpu', f
     :param model_save_path: 模型保存路径，如果为None则不保存
     :return: 更新后的准确率
     """
+    if force_update:
+        MNISTUtil.print_and_log("强制更新")
+
+        # 创建一个临时模型来评估新参数的性能
+        temp_model = MNISTCNN().to(device)
+        temp_model.set_parameters(parameters)
+
+        # 评估新参数的准确率
+        MNISTUtil.print_and_log("评估平均参数的准确率")
+        new_accuracy = temp_model.evaluate(test_loader, device)
+
+        MNISTUtil.print_and_log(
+            f"新准确率 ({new_accuracy * 100:.2f}%) 优于当前准确率 ({model.acc * 100:.2f}%)，更新模型")
+
+        # 更新模型参数
+        model.set_parameters(parameters)
+        model.acc = new_accuracy
+
+        # 如果提供了保存路径，则保存模型
+        if model_save_path:
+            model.save_model(model_save_path)
+            MNISTUtil.print_and_log(f"更新后的模型已保存至: {model_save_path}")
+
+        return
+
     # 如果模型未初始化准确率，先评估获取基准准确率
     if not model.isInit:
         MNISTUtil.print_and_log("评估获取基准准确率")
@@ -300,12 +325,8 @@ def update_model_with_parameters(model, parameters, test_loader, device='cpu', f
     new_accuracy = temp_model.evaluate(test_loader, device)
 
     # 决定是否更新模型参数
-    if force_update or new_accuracy > model.acc:
-        if force_update:
-            MNISTUtil.print_and_log("强制更新模型参数")
-        else:
-            MNISTUtil.print_and_log(
-                f"新准确率 ({new_accuracy * 100:.2f}%) 优于当前准确率 ({model.acc * 100:.2f}%)，更新模型")
+    if new_accuracy > model.acc:
+        MNISTUtil.print_and_log(f"新准确率 ({new_accuracy * 100:.2f}%) 优于当前准确率 ({model.acc * 100:.2f}%)，更新模型")
 
         # 更新模型参数
         model.set_parameters(parameters)
