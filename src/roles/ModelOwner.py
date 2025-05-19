@@ -1,3 +1,5 @@
+import math
+
 class ModelOwner:
     def __init__(self, model):
         """
@@ -15,4 +17,4 @@ class ModelOwner:
         """
         # 默认模型评价函数
 
-        return sum_pn_fn_xn - Eta
+        return math.log(sum_pn_fn_xn) - Eta

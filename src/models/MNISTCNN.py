@@ -307,7 +307,7 @@ def update_model_with_parameters(model, parameters, test_loader, device='cpu', f
             model.save_model(model_save_path)
             MNISTUtil.print_and_log(f"更新后的模型已保存至: {model_save_path}")
 
-        return
+        return new_accuracy
 
     # 如果模型未初始化准确率，先评估获取基准准确率
     if not model.isInit:
