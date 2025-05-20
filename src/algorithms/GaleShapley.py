@@ -103,7 +103,7 @@ class GaleShapley:
         for _ in range(100):  # 最大迭代次数
             utility_current = cpc.cal_utility(Rho, sumdm, sumxn, dm)
             # 计算效用对dm的梯度
-            gradient = (cpc.cal_utility(Rho, sumdm, sumxn, dm + 0.001) - utility_current) / 0.001
+            gradient = (cpc.cal_utility(Rho, sumdm, sumxn, dm + 0.001) - utility_current) / 0.01
             # 更新dm值
             dm = dm + learning_rate * gradient
             # # 确保dm值在[0,1]之间

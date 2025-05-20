@@ -10,7 +10,7 @@ class ComputingCenter:
         self.SigmaM = SigmaM
         self.imgData = []
         self.labelData = []
-        self.bestDm = 0.5
+        self.bestDm = 0.01
 
     # 效用函数
     def cal_utility(self, Rho, sum_dm, sum_xn, dm):

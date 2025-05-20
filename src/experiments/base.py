@@ -18,25 +18,6 @@ from src.utils.MNISTUtil import MNISTUtil
 from src.global_variable import parent_path, Lambda, Rho, Alpha, Epsilon, adjustment_literation
 
 
-# 定义参数值
-def define_parameters(Lambda=1, Rho=1, Alpha=1, Epsilon=1, N=5, M=5, SigmaM=[1, 1, 1, 1, 1]):
-    """
-    定义参数值
-    :param Lambda: 市场调整因子
-    :param Rho: 单位数据训练费用
-    :param Alpha: 模型质量调整参数
-    :param Epsilon: 训练数据质量阈值
-    :param N: DataOwner的数量
-    :param M: ComputingCenter数量
-    :param SigmaM: ComputingCenter的计算呢能力
-    :return:
-    """
-    # 设置numpy打印选项：禁用截断，单行显示
-    np.set_printoptions(threshold=np.inf, linewidth=np.inf)  # 关键设置
-
-    return Lambda, Rho, Alpha, Epsilon, N, M, SigmaM
-
-
 # 获取项目根目录
 def get_project_root():
     # 获取当前文件的绝对路径
@@ -53,8 +34,25 @@ def get_project_root():
     return project_root
 
 
+# 定义参数值
+def define_parameters(Lambda=1, Rho=1, Alpha=1, Epsilon=1, N=5, M=5, SigmaM=[1, 1, 1, 1, 1]):
+    """
+    定义参数值
+    :param Lambda: 市场调整因子
+    :param Rho: 单位数据训练费用
+    :param Alpha: 模型质量调整参数
+    :param Epsilon: 训练数据质量阈值
+    :param N: DataOwner的数量
+    :param M: ComputingCenter数量
+    :param SigmaM: ComputingCenter的计算呢能力
+    :return:
+    """
+
+    return Lambda, Rho, Alpha, Epsilon, N, M, SigmaM
+
+
 # 为联邦学习任务做准备工作
-def ready_for_task():
+def ready_for_task(rate):
     project_root = get_project_root()
 
     train_images_path = f"{project_root}/data/dataset/MNIST/train-images.idx3-ubyte"
@@ -73,7 +71,7 @@ def ready_for_task():
     MNISTUtil.split_data_to_dataowners_with_large_gap(dataowners, train_images, train_labels)
 
     # 初始化ModelOwner
-    modelowner = ModelOwner(model=init_model(0.001))
+    modelowner = ModelOwner(model=init_model(rate=rate))
 
     # 初始化ComputingCenter
     ComputingCenters = [ComputingCenter(Lambda, Epsilon, SigmaM[i]) for i in range(M)]
@@ -199,22 +197,26 @@ def calculate_optimal_payment_and_data(avg_f_list, last_xn_list):
 
 
 # DataOwner结合自身数据质量来算模型贡献，分配ModelOwner的支付
-def compute_contribution_rates(xn_list, avg_f_list, best_Eta):
+def compute_contribution_rates(xn_list, avg_f_list, pn_list, best_Eta):
     """
     DataOwner结合自身数据质量来算模型贡献，分配ModelOwner的支付
     :param xn_list:
     :param avg_f_list:
+    :param pn_list:
     :param best_Eta:
     :return:
     """
-    # 计算qn （qn = xn*fn）
+    # 计算qn（qn = xn*fn*pn）
     contributions = [a * b for a, b in zip(xn_list, avg_f_list)]
+    contributions = [a * b for a, b in zip(contributions, pn_list)]
 
     sum_qn = sum(contributions)
 
     MNISTUtil.print_and_log(f"ModelOwner的最优总支付：{best_Eta}")
     for i in range(len(xn_list)):
-        MNISTUtil.print_and_log(f"DataOwner{i + 1}的分配到的支付 ： {contributions[i] / sum_qn * best_Eta:.4f}")
+        MNISTUtil.print_and_log(f"DataOwner{i + 1}:")
+        MNISTUtil.print_and_log(
+            f"pn:{pn_list[i]}; xn:{xn_list[i]}; 分配到的支付：{contributions[i] / sum_qn * best_Eta:.4f}")
 
 
 # 匹配DataOwner和ComputingCenter
@@ -411,7 +413,7 @@ if __name__ == "__main__":
         MNISTUtil.print_and_log("DONE")
 
         MNISTUtil.print_and_log("---------------------------------- 准备工作 ----------------------------------")
-        dataowners, modelowner, ComputingCenters, test_images, test_labels = ready_for_task()
+        dataowners, modelowner, ComputingCenters, test_images, test_labels = ready_for_task(rate=0.001)
         MNISTUtil.print_and_log("DONE")
 
         literation = 0  # 迭代次数
@@ -449,7 +451,7 @@ if __name__ == "__main__":
                 break
 
             MNISTUtil.print_and_log(f"----- literation {literation + 1}: DataOwner 分配 ModelOwner 的支付 -----")
-            compute_contribution_rates(xn_list, avg_f_list, best_Eta)
+            compute_contribution_rates(xn_list, avg_f_list, pn_list, best_Eta)
             MNISTUtil.print_and_log("DONE")
 
             # 一旦匹配成功，就无法改变
