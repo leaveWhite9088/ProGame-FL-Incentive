@@ -1,6 +1,6 @@
 import numpy as np
 from scipy.optimize import minimize
-from src.utils.MNISTUtil import MNISTUtil
+from src.utils.UtilMNIST import MNISTUtil
 from src.algorithms.CournotGame import CournotGame
 
 class JointOptimization:

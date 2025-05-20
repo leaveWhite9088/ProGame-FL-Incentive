@@ -1,5 +1,5 @@
 import numpy as np
-from src.utils.MNISTUtil import MNISTUtil
+from src.utils.UtilMNIST import MNISTUtil
 
 class CournotGame:
     """

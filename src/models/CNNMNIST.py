@@ -6,8 +6,8 @@ import torch.nn.functional as F
 from torch.utils.data import DataLoader
 from torchvision import transforms
 
-from src.datasets.MNISTDataset import MNISTDataset
-from src.utils.MNISTUtil import MNISTUtil
+from src.datasets.DatasetMNIST import MNISTDataset
+from src.utils.UtilMNIST import MNISTUtil
 from src.global_variable import parent_path
 
 

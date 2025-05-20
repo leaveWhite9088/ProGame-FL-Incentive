@@ -9,12 +9,12 @@ import os
 
 from src.algorithms.Stackelberg import Stackelberg
 from src.algorithms.GaleShapley import GaleShapley
-from src.models.MNISTCNN import MNISTCNN, evaluate_data_for_dynamic_adjustment, fine_tune_mnist_cnn, \
+from src.models.CNNMNIST import MNISTCNN, evaluate_data_for_dynamic_adjustment, fine_tune_mnist_cnn, \
     average_models_parameters, update_model_with_parameters
 from src.roles.ComputingCenter import ComputingCenter
 from src.roles.DataOwner import DataOwner
 from src.roles.ModelOwner import ModelOwner
-from src.utils.MNISTUtil import MNISTUtil
+from src.utils.UtilMNIST import MNISTUtil
 from src.global_variable import parent_path, Lambda, Rho, Alpha, Epsilon, adjustment_literation
 
 
