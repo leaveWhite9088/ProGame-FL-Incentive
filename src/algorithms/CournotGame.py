@@ -119,11 +119,11 @@ class CournotGame:
             # 如果 q_previous_norm 非常小，使用绝对差值进行比较，或者认为已收敛（如果 diff_norm 也小）
             if q_previous_norm < 1e-9:  # 调整一个更小的阈值来判断是否“接近零”
                 if diff_norm < tolerance:  # 可以用一个绝对小的量，或者 tolerance 本身如果够小
-                    MNISTUtil.print_and_log(
-                        f"收敛达成 (迭代 {iteration + 1}): q_previous 接近零 (范数: {q_previous_norm:.2e}), 差异 ({diff_norm:.2e}) 小于或接近容忍度。")
+                    # MNISTUtil.print_and_log(
+                    #     f"收敛达成 (迭代 {iteration + 1}): q_previous 接近零 (范数: {q_previous_norm:.2e}), 差异 ({diff_norm:.2e}) 小于或接近容忍度。")
                     break
             elif (diff_norm / q_previous_norm) < tolerance:
-                MNISTUtil.print_and_log(f"收敛达成 (迭代 {iteration + 1})。相对差异: {diff_norm / q_previous_norm:.2e}")
+                # MNISTUtil.print_and_log(f"收敛达成 (迭代 {iteration + 1})。相对差异: {diff_norm / q_previous_norm:.2e}")
                 break
 
             if iteration == max_iterations - 1:

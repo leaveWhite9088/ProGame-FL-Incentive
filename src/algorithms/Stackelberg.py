@@ -1,4 +1,5 @@
 import numpy as np
+import random
 from src.utils.UtilMNIST import MNISTUtil
 from src.algorithms.JointOptimization import JointOptimization
 
@@ -80,4 +81,111 @@ class Stackelberg:
         # for n in range(self.N):
         #     MNISTUtil.print_and_log(f"数据拥有者{n+1}效用: {follower_utilities[n]:.4f}")
         
-        return p_star, eta_star, q_star, leader_utility, follower_utilities
+        return p_star, eta_star, q_star, leader_utility, total_follower_utility / self.N
+        
+    def solve_with_fixed_eta(self, eta_fixed, max_iterations=100, tolerance=1e-6):
+        """
+        在固定总支付eta的情况下求解追随者(数据拥有者)间的博弈均衡
+        
+        与solve函数保持一致的流程，唯一区别是使用固定的eta值而非优化得到的eta
+        
+        :param eta_fixed: 固定的总支付金额
+        :param max_iterations: 最大迭代次数
+        :param tolerance: 收敛容差
+        :return: 元组 (p_star, eta_fixed, q_star, leader_utility, avg_follower_utility)
+                p_star: 均衡概率分配
+                eta_fixed: 固定的总支付金额
+                q_star: 均衡质量选择
+                leader_utility: 领导者效用
+                avg_follower_utility: 平均跟随者效用
+        """
+        MNISTUtil.print_and_log(f"开始求解固定总支付eta={eta_fixed}下的Stackelberg博弈...")
+        
+        # 1. 调用JointOptimization求解，但不使用其返回的eta，而是使用固定的eta_fixed
+        p_star, _, q_star, _ = self.joint_optimizer.optimize()
+        
+        # 2. 计算各数据拥有者(跟随者)在均衡时的效用
+        S_star_actual = np.sum(p_star * q_star)
+
+        # 计算领导者效用
+        leader_utility = np.log(1 + S_star_actual) - eta_fixed
+
+        # 检查 S* 是否接近于零以避免除零错误
+        if S_star_actual > 1e-9:  # 使用一个小的正阈值
+            price_at_equilibrium = eta_fixed / S_star_actual
+            # 计算每个跟随者的效用
+            follower_utilities = q_star * (price_at_equilibrium - self.C)
+        else:
+            # 如果 S* 为零或接近零 (例如 eta*=0 或 q*=0)
+            # 那么 q_n * (price - C_n) 中的 q_n 通常也为零
+            # 因此效用为零
+            follower_utilities = np.zeros(self.N)
+
+        # 3. 计算跟随者总效用
+        total_follower_utility = np.sum(follower_utilities)
+        avg_follower_utility = total_follower_utility / self.N
+        
+        # 输出完整的均衡结果
+        MNISTUtil.print_and_log("固定总支付下的Stackelberg博弈求解完成，以下为结果")
+        MNISTUtil.print_and_log(f"均衡p: {p_star}")
+        MNISTUtil.print_and_log(f"固定eta: {eta_fixed:.4f}")
+        MNISTUtil.print_and_log(f"均衡q: {q_star}")
+        MNISTUtil.print_and_log(f"领导者效用: {leader_utility:.4f}")
+        MNISTUtil.print_and_log(f"跟随者平均效用: {avg_follower_utility:.4f}")
+        
+        return p_star, eta_fixed, q_star, leader_utility, avg_follower_utility
+
+    def solve_with_random_eta(self, eta_max, max_iterations=100, tolerance=1e-6):
+        """
+        在0到eta_max之间随机选择总支付eta的情况下求解追随者(数据拥有者)间的博弈均衡
+        
+        与solve_with_fixed_eta函数保持一致的流程，唯一区别是使用随机选择的eta值
+        
+        :param eta_max: eta的上限值，实际使用的eta将在0到此值之间随机选择
+        :param max_iterations: 最大迭代次数
+        :param tolerance: 收敛容差
+        :return: 元组 (p_star, random_eta, q_star, leader_utility, avg_follower_utility)
+                p_star: 均衡概率分配
+                random_eta: 随机选择的总支付金额
+                q_star: 均衡质量选择
+                leader_utility: 领导者效用
+                avg_follower_utility: 平均跟随者效用
+        """
+        # 在0到eta_max之间随机选择一个eta值,
+        random_eta = random.uniform(0, eta_max)
+        
+        MNISTUtil.print_and_log(f"开始求解随机总支付eta={random_eta:.4f}(上限为{eta_max:.4f})下的Stackelberg博弈...")
+        
+        # 1. 调用JointOptimization求解，但不使用其返回的eta，而是使用随机选择的eta
+        p_star, _, q_star, _ = self.joint_optimizer.optimize()
+        
+        # 2. 计算各数据拥有者(跟随者)在均衡时的效用
+        S_star_actual = np.sum(p_star * q_star)
+
+        # 计算领导者效用
+        leader_utility = np.log(1 + S_star_actual) - random_eta
+
+        # 检查 S* 是否接近于零以避免除零错误
+        if S_star_actual > 1e-9:  # 使用一个小的正阈值
+            price_at_equilibrium = random_eta / S_star_actual
+            # 计算每个跟随者的效用
+            follower_utilities = q_star * (price_at_equilibrium - self.C)
+        else:
+            # 如果 S* 为零或接近零 (例如 eta*=0 或 q*=0)
+            # 那么 q_n * (price - C_n) 中的 q_n 通常也为零
+            # 因此效用为零
+            follower_utilities = np.zeros(self.N)
+
+        # 3. 计算跟随者总效用
+        total_follower_utility = np.sum(follower_utilities)
+        avg_follower_utility = total_follower_utility / self.N
+        
+        # 输出完整的均衡结果
+        MNISTUtil.print_and_log("随机总支付下的Stackelberg博弈求解完成，以下为结果")
+        MNISTUtil.print_and_log(f"均衡p: {p_star}")
+        MNISTUtil.print_and_log(f"随机eta: {random_eta:.4f}")
+        MNISTUtil.print_and_log(f"均衡q: {q_star}")
+        MNISTUtil.print_and_log(f"领导者效用: {leader_utility:.4f}")
+        MNISTUtil.print_and_log(f"跟随者平均效用: {avg_follower_utility:.4f}")
+        
+        return p_star, random_eta, q_star, leader_utility, avg_follower_utility

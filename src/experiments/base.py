@@ -193,6 +193,17 @@ def calculate_optimal_payment_and_data(avg_f_list, last_xn_list):
     # 将q_star转化为x_opt
     x_opt = [a / b for a, b in zip(q_star, avg_f_list)]
 
+    # 将pn_list(p_star)做归一化
+    def normalize_list(data):
+        min_value = min(data)
+        max_value = max(data)
+        if max_value == min_value:  # 防止分母为零
+            return [0.0] * len(data)  # 如果所有值相同，归一化结果为 0
+        normalized_data = [(x - min_value) / (max_value - min_value) for x in data]
+        return normalized_data
+
+    p_star = normalize_list(p_star)
+
     return MNISTUtil.compare_elements(x_opt, last_xn_list), p_star, eta_star, leader_utility, follower_utilities / N
 
 
