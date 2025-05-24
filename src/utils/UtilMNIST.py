@@ -456,7 +456,7 @@ class MNISTUtil:
         if max_val == min_val:  # 如果所有元素都相同，直接返回全1列表
             return [1] * len(lst)
 
-        normalized_lst = [0.9 + 0.1 * ((x - min_val) / (max_val - min_val)) for x in lst]
+        normalized_lst = [((x - min_val) / (max_val - min_val)) for x in lst]
         return normalized_lst
 
     # 取两个list中较大的元素
