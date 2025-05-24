@@ -141,9 +141,12 @@ class GaleShapley:
         maxVal = max(data_volume_list)
 
         # normalized_arr 是最优数据量列表
-        normalized_lst = [minVal + (x - min_value) * (maxVal - minVal) / (max_value - min_value) for x in bestDm_list]
-
-        print(f"normalized_lst:{normalized_lst}")
+        try:
+            normalized_lst = [minVal + (x - min_value) * (maxVal - minVal) / (max_value - min_value) for x in
+                              bestDm_list]
+        except (ZeroDivisionError, TypeError, Exception) as e:
+            # 将 normalized_lst 设置为与 bestDm_list 等长的全零列表
+            normalized_lst = [0.0] * len(bestDm_list)
 
         # 对每个 CPC，计算 diff_list
         for index in range(len(CPCs)):

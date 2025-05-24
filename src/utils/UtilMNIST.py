@@ -1,6 +1,7 @@
 import struct
 import numpy as np
 import torch
+from sklearn.preprocessing import PowerTransformer
 from torch.utils.data import TensorDataset, DataLoader
 import os
 
@@ -465,3 +466,23 @@ class MNISTUtil:
         # 使用列表推导式和zip函数逐个比较元素
         comparison_results = [x if x > y else y for x, y in zip(list1, list2)]
         return comparison_results
+
+    @staticmethod
+    def power_transform_then_min_max_normalize(data):
+        """
+        使用Yeo-Johnson幂变换使数据接近高斯分布，然后进行Min-Max归一化。
+        """
+        data_np = np.array(data).reshape(-1, 1)
+
+        # method='yeo-johnson' 支持正数、负数和零，对于您的数据更通用
+        # standardize=False 意味着只进行幂变换，不进行Z-score标准化
+        pt = PowerTransformer(method='yeo-johnson', standardize=False)
+        transformed_data = pt.fit_transform(data_np).flatten().tolist()
+
+        # 之后再进行Min-Max归一化
+        min_value = min(transformed_data)
+        max_value = max(transformed_data)
+        if max_value == min_value:
+            return [0.0] * len(transformed_data)
+        normalized_data = [(x - min_value) / (max_value - min_value) for x in transformed_data]
+        return normalized_data

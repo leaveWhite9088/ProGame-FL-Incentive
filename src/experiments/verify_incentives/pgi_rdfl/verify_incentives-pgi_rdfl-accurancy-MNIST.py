@@ -6,7 +6,7 @@ import torch.optim as optim
 import re
 from datetime import datetime
 import os
-from sklearn.preprocessing import QuantileTransformer
+from sklearn.preprocessing import QuantileTransformer, PowerTransformer
 
 from src.algorithms.Stackelberg import Stackelberg
 from src.algorithms.GaleShapley import GaleShapley
@@ -193,25 +193,10 @@ def calculate_optimal_payment_and_data(avg_f_list, last_xn_list):
 
     # 将q_star转化为x_opt
     # x_opt = [a / b for a, b in zip(q_star, avg_f_list)]
-    x_opt = q_star
+    x_opt = MNISTUtil.power_transform_then_min_max_normalize(q_star)
 
     # 将pn_list(p_star)做归一化
-    def quantile_uniform_normalize(data):
-        """
-        使用分位数变换将数据映射到0-1的均匀分布。
-        """
-        # QuantileTransformer 接受二维数组
-        data_np = np.array(data).reshape(-1, 1)
-
-        # output_distribution='uniform' 将数据映射到均匀分布 (默认在0-1之间)
-        # random_state 用于确保结果可复现，特别是在有重复值时
-        qt = QuantileTransformer(output_distribution='uniform', random_state=42)
-
-        transformed_data = qt.fit_transform(data_np).flatten().tolist()
-
-        return transformed_data
-
-    p_star = quantile_uniform_normalize(p_star)
+    p_star = MNISTUtil.power_transform_then_min_max_normalize(p_star)
 
     return MNISTUtil.compare_elements(x_opt, last_xn_list), p_star, eta_star, leader_utility, follower_utilities / N
 
@@ -458,6 +443,7 @@ if __name__ == "__main__":
             # 提前中止
             if literation > adjustment_literation:
                 MNISTUtil.print_and_log(f"accuracy_list: {accuracy_list}")
+                accuracy_list_total.append(accuracy_list)
                 break
 
             MNISTUtil.print_and_log(f"----- literation {literation + 1}: DataOwner 分配 ModelOwner 的支付 -----")

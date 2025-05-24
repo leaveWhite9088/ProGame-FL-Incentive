@@ -7,7 +7,7 @@ import re
 from datetime import datetime
 import os
 
-from sklearn.preprocessing import QuantileTransformer
+from sklearn.preprocessing import QuantileTransformer, PowerTransformer
 
 from src.algorithms.Stackelberg import Stackelberg
 from src.algorithms.GaleShapley import GaleShapley
@@ -188,32 +188,16 @@ def calculate_optimal_payment_and_data(avg_f_list, last_xn_list):
     :return:
     """
     # 利用Stackelberg算法，求ModelOwner的支付，DataOwner提供的最优数据量
-    # 这里传入FIX值
-    fix_Eta = 1
+    max_Eta = 1
     stackelberg_solver = Stackelberg(N, Rho * Lambda, avg_f_list)
-    p_star, eta_star, q_star, leader_utility, follower_utilities = stackelberg_solver.solve_with_fixed_eta(fix_Eta)
+    p_star, eta_star, q_star, leader_utility, follower_utilities = stackelberg_solver.solve_with_random_eta(max_Eta)
 
     # 将q_star转化为x_opt
     # x_opt = [a / b for a, b in zip(q_star, avg_f_list)]
-    x_opt = q_star
+    x_opt = MNISTUtil.power_transform_then_min_max_normalize(q_star)
 
     # 将pn_list(p_star)做归一化
-    def quantile_uniform_normalize(data):
-        """
-        使用分位数变换将数据映射到0-1的均匀分布。
-        """
-        # QuantileTransformer 接受二维数组
-        data_np = np.array(data).reshape(-1, 1)
-
-        # output_distribution='uniform' 将数据映射到均匀分布 (默认在0-1之间)
-        # random_state 用于确保结果可复现，特别是在有重复值时
-        qt = QuantileTransformer(output_distribution='uniform', random_state=42)
-
-        transformed_data = qt.fit_transform(data_np).flatten().tolist()
-
-        return transformed_data
-
-    p_star = quantile_uniform_normalize(p_star)
+    p_star = MNISTUtil.power_transform_then_min_max_normalize(p_star)
 
     return MNISTUtil.compare_elements(x_opt, last_xn_list), p_star, eta_star, leader_utility, follower_utilities / N
 
@@ -498,6 +482,6 @@ if __name__ == "__main__":
 
             literation += 1
 
-    MNISTUtil.print_and_log("fixed 最终的列表：")
+    MNISTUtil.print_and_log("random 最终的列表：")
     MNISTUtil.print_and_log(f"U_qn_list: {U_qn_list}")
     MNISTUtil.print_and_log(f"U_Eta_list: {U_Eta_list}")
