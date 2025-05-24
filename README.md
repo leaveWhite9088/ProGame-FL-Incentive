@@ -16,7 +16,7 @@ PGI-RDFL(Our Method)
 # MNIST with PGI-RDFL -utility
 python -m src.experiments.verify_incentives.utility.pgi_rdfl.verify_incentives-pgi_rdfl-utility-MNIST --adjustment_literation -1 --parent_path log-verify_incentives-utility
 # MNIST with PGI-RDFL -accurancy
-python -m src.experiments.verify_incentives.accurancy.pgi_rdfl.verify_incentives-pgi_rdfl-accurancy-MNIST --adjustment_literation 99 --parent_path log-verify_incentives-accurancy
+python -m src.experiments.verify_incentives.accurancy.pgi_rdfl.verify_incentives-pgi_rdfl-accurancy-MNIST --adjustment_literation 10 --parent_path log-verify_incentives-accurancy
 ```
 
 random Strategy

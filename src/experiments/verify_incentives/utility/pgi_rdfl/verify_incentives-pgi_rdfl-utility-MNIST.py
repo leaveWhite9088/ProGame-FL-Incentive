@@ -7,6 +7,8 @@ import re
 from datetime import datetime
 import os
 
+from sklearn.preprocessing import QuantileTransformer
+
 from src.algorithms.Stackelberg import Stackelberg
 from src.algorithms.GaleShapley import GaleShapley
 from src.models.CNNMNIST import MNISTCNN, evaluate_data_for_dynamic_adjustment, fine_tune_mnist_cnn, \
@@ -191,18 +193,26 @@ def calculate_optimal_payment_and_data(avg_f_list, last_xn_list):
     p_star, eta_star, q_star, leader_utility, follower_utilities = stackelberg_solver.solve()
 
     # 将q_star转化为x_opt
-    x_opt = [a / b for a, b in zip(q_star, avg_f_list)]
+    # x_opt = [a / b for a, b in zip(q_star, avg_f_list)]
+    x_opt = q_star
 
     # 将pn_list(p_star)做归一化
-    def normalize_list(data):
-        min_value = min(data)
-        max_value = max(data)
-        if max_value == min_value:  # 防止分母为零
-            return [0.0] * len(data)  # 如果所有值相同，归一化结果为 0
-        normalized_data = [(x - min_value) / (max_value - min_value) for x in data]
-        return normalized_data
+    def quantile_uniform_normalize(data):
+        """
+        使用分位数变换将数据映射到0-1的均匀分布。
+        """
+        # QuantileTransformer 接受二维数组
+        data_np = np.array(data).reshape(-1, 1)
 
-    p_star = normalize_list(p_star)
+        # output_distribution='uniform' 将数据映射到均匀分布 (默认在0-1之间)
+        # random_state 用于确保结果可复现，特别是在有重复值时
+        qt = QuantileTransformer(output_distribution='uniform', random_state=42)
+
+        transformed_data = qt.fit_transform(data_np).flatten().tolist()
+
+        return transformed_data
+
+    p_star = quantile_uniform_normalize(p_star)
 
     return MNISTUtil.compare_elements(x_opt, last_xn_list), p_star, eta_star, leader_utility, follower_utilities / N
 
