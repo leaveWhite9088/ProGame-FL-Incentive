@@ -1,6 +1,6 @@
 import numpy as np
 from scipy.optimize import minimize
-from src.utils.UtilMNIST import UtilMNIST
+from src.utils import UtilT
 from src.algorithms.CournotGame import CournotGame
 
 class JointOptimization:
@@ -80,7 +80,7 @@ class JointOptimization:
         initial_guess = np.concatenate([initial_p, [initial_eta]])
         
         # 使用SLSQP方法求解约束优化问题
-        UtilMNIST.print_and_log("开始模型拥有者联合参数优化...")
+        UtilT.print_and_log("开始模型拥有者联合参数优化...")
         result = minimize(
             objective_function,
             initial_guess,
@@ -90,9 +90,9 @@ class JointOptimization:
         )
         
         if result.success:
-            UtilMNIST.print_and_log("模型拥有者联合参数优化成功!")
+            UtilT.print_and_log("模型拥有者联合参数优化成功!")
         else:
-            UtilMNIST.print_and_log(f"警告: 优化未成功收敛。原因: {result.message}")
+            UtilT.print_and_log(f"警告: 优化未成功收敛。原因: {result.message}")
         
         # 提取结果
         optimal_variables = result.x
@@ -110,10 +110,10 @@ class JointOptimization:
         # 模型拥有者最大效用
         leader_utility = -result.fun
         
-        # UtilMNIST.print_and_log(f"最优p: {p_optimal}")
-        # UtilMNIST.print_and_log(f"最优eta: {eta_optimal:.4f}")
-        # UtilMNIST.print_and_log(f"对应的q: {q_optimal}")
-        # UtilMNIST.print_and_log(f"模型拥有者最大效用: {leader_utility:.4f}")
+        # UtilT.print_and_log(f"最优p: {p_optimal}")
+        # UtilT.print_and_log(f"最优eta: {eta_optimal:.4f}")
+        # UtilT.print_and_log(f"对应的q: {q_optimal}")
+        # UtilT.print_and_log(f"模型拥有者最大效用: {leader_utility:.4f}")
         
         return p_optimal, eta_optimal, q_optimal, leader_utility
         
@@ -154,7 +154,7 @@ class JointOptimization:
         initial_guess = np.array([initial_eta])
         
         # 使用SLSQP方法求解约束优化问题
-        UtilMNIST.print_and_log("开始模型拥有者的eta优化(固定p)...")
+        UtilT.print_and_log("开始模型拥有者的eta优化(固定p)...")
         result = minimize(
             objective_function_eta,
             initial_guess,
@@ -164,9 +164,9 @@ class JointOptimization:
         )
         
         if result.success:
-            UtilMNIST.print_and_log("模型拥有者的eta优化成功!")
+            UtilT.print_and_log("模型拥有者的eta优化成功!")
         else:
-            UtilMNIST.print_and_log(f"警告: eta优化未成功收敛。原因: {result.message}")
+            UtilT.print_and_log(f"警告: eta优化未成功收敛。原因: {result.message}")
         
         # 提取结果
         eta_optimal = result.x[0]
@@ -177,9 +177,9 @@ class JointOptimization:
         # 模型拥有者最大效用
         leader_utility = -result.fun
         
-        UtilMNIST.print_and_log(f"固定p: {p_fixed}")
-        UtilMNIST.print_and_log(f"最优eta: {eta_optimal:.4f}")
-        UtilMNIST.print_and_log(f"对应的q: {q_optimal}")
-        UtilMNIST.print_and_log(f"模型拥有者最大效用: {leader_utility:.4f}")
+        UtilT.print_and_log(f"固定p: {p_fixed}")
+        UtilT.print_and_log(f"最优eta: {eta_optimal:.4f}")
+        UtilT.print_and_log(f"对应的q: {q_optimal}")
+        UtilT.print_and_log(f"模型拥有者最大效用: {leader_utility:.4f}")
         
         return p_fixed, eta_optimal, q_optimal, leader_utility

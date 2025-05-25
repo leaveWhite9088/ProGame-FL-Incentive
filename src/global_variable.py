@@ -1,4 +1,5 @@
 """全局变量"""
+import os
 
 """================================= 超参数 ================================="""
 
@@ -18,6 +19,7 @@ parser = argparse.ArgumentParser()
 # 添加命令行参数
 parser.add_argument('--adjustment_literation', type=float, default=0.01, help="adjustment_literation")
 parser.add_argument('--parent_path', type=str, default="log-main", help="parent_path")
+parser.add_argument("--util", choices=["MNIST", "CIFAR10", "CIFAR100"], default="MNIST", help="util")
 
 # 解析命令行参数
 args = parser.parse_args()
@@ -26,3 +28,5 @@ args = parser.parse_args()
 adjustment_literation = args.adjustment_literation
 # 路径参数 可选：log-parameter_analysis,log-comparison,log-ablation,log-supplement
 parent_path = args.parent_path
+# 选择工具类
+os.environ["UTIL_TYPE"] = args.util

@@ -1,6 +1,6 @@
 import numpy as np
 import random
-from src.utils.UtilMNIST import UtilMNIST
+from src.utils import UtilT
 from src.algorithms.JointOptimization import JointOptimization
 
 class Stackelberg:
@@ -46,7 +46,7 @@ class Stackelberg:
                 follower_utilities: 跟随者效用向量
                 social_welfare: 社会福利(所有参与者效用总和)
         """
-        UtilMNIST.print_and_log("开始求解Stackelberg博弈...")
+        UtilT.print_and_log("开始求解Stackelberg博弈...")
         
         # 1. 调用JointOptimization求解领导者优化问题
         # 注意：这已经包含了将数据拥有者响应嵌入到领导者优化中的过程
@@ -70,16 +70,16 @@ class Stackelberg:
         total_follower_utility = np.sum(follower_utilities)
         
         # 输出完整的均衡结果
-        UtilMNIST.print_and_log("Stackelberg博弈求解完成，以下为结果")
-        UtilMNIST.print_and_log(f"均衡p: {p_star}")
-        UtilMNIST.print_and_log(f"均衡eta: {eta_star:.4f}")
-        UtilMNIST.print_and_log(f"均衡q: {q_star}")
-        UtilMNIST.print_and_log(f"领导者效用: {leader_utility:.4f}")
-        UtilMNIST.print_and_log(f"跟随者总效用: {total_follower_utility:.4f}")
+        UtilT.print_and_log("Stackelberg博弈求解完成，以下为结果")
+        UtilT.print_and_log(f"均衡p: {p_star}")
+        UtilT.print_and_log(f"均衡eta: {eta_star:.4f}")
+        UtilT.print_and_log(f"均衡q: {q_star}")
+        UtilT.print_and_log(f"领导者效用: {leader_utility:.4f}")
+        UtilT.print_and_log(f"跟随者总效用: {total_follower_utility:.4f}")
         
         # 可以进一步分析各数据拥有者的个体效用
         # for n in range(self.N):
-        #     UtilMNIST.print_and_log(f"数据拥有者{n+1}效用: {follower_utilities[n]:.4f}")
+        #     UtilT.print_and_log(f"数据拥有者{n+1}效用: {follower_utilities[n]:.4f}")
         
         return p_star, eta_star, q_star, leader_utility, total_follower_utility / self.N
         
@@ -99,7 +99,7 @@ class Stackelberg:
                 leader_utility: 领导者效用
                 avg_follower_utility: 平均跟随者效用
         """
-        UtilMNIST.print_and_log(f"开始求解固定总支付eta={eta_fixed}下的Stackelberg博弈...")
+        UtilT.print_and_log(f"开始求解固定总支付eta={eta_fixed}下的Stackelberg博弈...")
         
         # 1. 调用JointOptimization求解，但不使用其返回的eta，而是使用固定的eta_fixed
         p_star, _, q_star, _ = self.joint_optimizer.optimize()
@@ -126,12 +126,12 @@ class Stackelberg:
         avg_follower_utility = total_follower_utility / self.N
         
         # 输出完整的均衡结果
-        UtilMNIST.print_and_log("固定总支付下的Stackelberg博弈求解完成，以下为结果")
-        UtilMNIST.print_and_log(f"均衡p: {p_star}")
-        UtilMNIST.print_and_log(f"固定eta: {eta_fixed:.4f}")
-        UtilMNIST.print_and_log(f"均衡q: {q_star}")
-        UtilMNIST.print_and_log(f"领导者效用: {leader_utility:.4f}")
-        UtilMNIST.print_and_log(f"跟随者平均效用: {avg_follower_utility:.4f}")
+        UtilT.print_and_log("固定总支付下的Stackelberg博弈求解完成，以下为结果")
+        UtilT.print_and_log(f"均衡p: {p_star}")
+        UtilT.print_and_log(f"固定eta: {eta_fixed:.4f}")
+        UtilT.print_and_log(f"均衡q: {q_star}")
+        UtilT.print_and_log(f"领导者效用: {leader_utility:.4f}")
+        UtilT.print_and_log(f"跟随者平均效用: {avg_follower_utility:.4f}")
         
         return p_star, eta_fixed, q_star, leader_utility, avg_follower_utility
 
@@ -154,7 +154,7 @@ class Stackelberg:
         # 在0到eta_max之间随机选择一个eta值,
         random_eta = random.uniform(0, eta_max)
         
-        UtilMNIST.print_and_log(f"开始求解随机总支付eta={random_eta:.4f}(上限为{eta_max:.4f})下的Stackelberg博弈...")
+        UtilT.print_and_log(f"开始求解随机总支付eta={random_eta:.4f}(上限为{eta_max:.4f})下的Stackelberg博弈...")
         
         # 1. 调用JointOptimization求解，但不使用其返回的eta，而是使用随机选择的eta
         p_star, _, q_star, _ = self.joint_optimizer.optimize()
@@ -181,12 +181,12 @@ class Stackelberg:
         avg_follower_utility = total_follower_utility / self.N
         
         # 输出完整的均衡结果
-        UtilMNIST.print_and_log("随机总支付下的Stackelberg博弈求解完成，以下为结果")
-        UtilMNIST.print_and_log(f"均衡p: {p_star}")
-        UtilMNIST.print_and_log(f"随机eta: {random_eta:.4f}")
-        UtilMNIST.print_and_log(f"均衡q: {q_star}")
-        UtilMNIST.print_and_log(f"领导者效用: {leader_utility:.4f}")
-        UtilMNIST.print_and_log(f"跟随者平均效用: {avg_follower_utility:.4f}")
+        UtilT.print_and_log("随机总支付下的Stackelberg博弈求解完成，以下为结果")
+        UtilT.print_and_log(f"均衡p: {p_star}")
+        UtilT.print_and_log(f"随机eta: {random_eta:.4f}")
+        UtilT.print_and_log(f"均衡q: {q_star}")
+        UtilT.print_and_log(f"领导者效用: {leader_utility:.4f}")
+        UtilT.print_and_log(f"跟随者平均效用: {avg_follower_utility:.4f}")
         
         return p_star, random_eta, q_star, leader_utility, avg_follower_utility
 
@@ -202,7 +202,7 @@ class Stackelberg:
                 leader_utility: 领导者效用
                 avg_follower_utility: 平均跟随者效用
         """
-        UtilMNIST.print_and_log("开始求解固定概率分配下的Stackelberg博弈...")
+        UtilT.print_and_log("开始求解固定概率分配下的Stackelberg博弈...")
         
         # 1. 调用JointOptimization的固定p优化函数
         p_star, eta_star, q_star, leader_utility = self.joint_optimizer.optimize_with_fixed_p(p_fixed)
@@ -226,11 +226,11 @@ class Stackelberg:
         avg_follower_utility = total_follower_utility / self.N
         
         # 输出完整的均衡结果
-        UtilMNIST.print_and_log("固定概率分配下的Stackelberg博弈求解完成，以下为结果")
-        UtilMNIST.print_and_log(f"固定p: {p_star}")
-        UtilMNIST.print_and_log(f"优化得到的eta: {eta_star:.4f}")
-        UtilMNIST.print_and_log(f"均衡q: {q_star}")
-        UtilMNIST.print_and_log(f"领导者效用: {leader_utility:.4f}")
-        UtilMNIST.print_and_log(f"跟随者平均效用: {avg_follower_utility:.4f}")
+        UtilT.print_and_log("固定概率分配下的Stackelberg博弈求解完成，以下为结果")
+        UtilT.print_and_log(f"固定p: {p_star}")
+        UtilT.print_and_log(f"优化得到的eta: {eta_star:.4f}")
+        UtilT.print_and_log(f"均衡q: {q_star}")
+        UtilT.print_and_log(f"领导者效用: {leader_utility:.4f}")
+        UtilT.print_and_log(f"跟随者平均效用: {avg_follower_utility:.4f}")
         
         return p_star, eta_star, q_star, leader_utility, avg_follower_utility
