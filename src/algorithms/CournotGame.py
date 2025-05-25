@@ -1,5 +1,5 @@
 import numpy as np
-from src.utils.UtilMNIST import MNISTUtil
+from src.utils.UtilMNIST import UtilMNIST
 
 class CournotGame:
     """
@@ -29,13 +29,13 @@ class CournotGame:
         
         # 检查输入有效性
         if N <= 1:
-            MNISTUtil.print_and_log("警告: 数据拥有者数量必须大于1才能形成有效的古诺博弈")
+            UtilMNIST.print_and_log("警告: 数据拥有者数量必须大于1才能形成有效的古诺博弈")
         
         if np.any(self.C <= 0):
-            MNISTUtil.print_and_log("警告: 成本C必须为正值")
+            UtilMNIST.print_and_log("警告: 成本C必须为正值")
             
         if np.any(self.q_max_vector < 0):
-            MNISTUtil.print_and_log("警告: 最大质量必须非负")
+            UtilMNIST.print_and_log("警告: 最大质量必须非负")
 
     def compute_equilibrium(self, p_vector, eta, max_iterations=1000, tolerance=0.01):
         """
@@ -51,12 +51,12 @@ class CournotGame:
 
         # 基本条件检查
         if self.N <= 0 or eta <= 0 or np.any(self.C <= 0) or not p_vector.any() or p_vector.shape[0] != self.N:
-            MNISTUtil.print_and_log("警告: 无效的参数输入 compute_equilibrium，返回全零质量向量")
+            UtilMNIST.print_and_log("警告: 无效的参数输入 compute_equilibrium，返回全零质量向量")
             return np.zeros(self.N if self.N > 0 else 1)  # 确保在N=0时不会出错
 
         # 处理 N=1 (垄断) 的情况
         if self.N == 1:
-            MNISTUtil.print_and_log("compute_equilibrium: N=1，处理垄断情况。")
+            UtilMNIST.print_and_log("compute_equilibrium: N=1，处理垄断情况。")
             q_star_vector_monopoly = np.zeros(1)  # 初始化为1个元素的向量
 
             # 在古诺模型的多参与者推导中，关键项 (N-1) 会在 N=1 时变为 0。
@@ -72,7 +72,7 @@ class CournotGame:
             # 遵循原公式在N=1时的数学结果。
             q_star_vector_monopoly[0] = max(0, min(q_analytic_monopoly, self.q_max_vector[0]))
 
-            MNISTUtil.print_and_log(f"N=1: 基于古诺公式的直接数学应用，计算得到 q_1 = {q_star_vector_monopoly[0]}")
+            UtilMNIST.print_and_log(f"N=1: 基于古诺公式的直接数学应用，计算得到 q_1 = {q_star_vector_monopoly[0]}")
             return q_star_vector_monopoly
 
         # --- 古诺博弈迭代过程 (N > 1) ---
@@ -91,7 +91,7 @@ class CournotGame:
                     q_current[n_init] = max(0, min(q_analytic_init, self.q_max_vector[n_init]))
         else:  # Sum_C_initial is 0 or negative, which is an invalid input caught earlier.
             # This block is defensive.
-            MNISTUtil.print_and_log("警告: Sum_C_initial 非正，无法计算启发式初始值，从零开始。")
+            UtilMNIST.print_and_log("警告: Sum_C_initial 非正，无法计算启发式初始值，从零开始。")
 
         for iteration in range(max_iterations):
             q_previous = q_current.copy()  # 保存上一轮的q
@@ -119,16 +119,16 @@ class CournotGame:
             # 如果 q_previous_norm 非常小，使用绝对差值进行比较，或者认为已收敛（如果 diff_norm 也小）
             if q_previous_norm < 1e-9:  # 调整一个更小的阈值来判断是否“接近零”
                 if diff_norm < tolerance:  # 可以用一个绝对小的量，或者 tolerance 本身如果够小
-                    # MNISTUtil.print_and_log(
+                    # UtilMNIST.print_and_log(
                     #     f"收敛达成 (迭代 {iteration + 1}): q_previous 接近零 (范数: {q_previous_norm:.2e}), 差异 ({diff_norm:.2e}) 小于或接近容忍度。")
                     break
             elif (diff_norm / q_previous_norm) < tolerance:
-                # MNISTUtil.print_and_log(f"收敛达成 (迭代 {iteration + 1})。相对差异: {diff_norm / q_previous_norm:.2e}")
+                # UtilMNIST.print_and_log(f"收敛达成 (迭代 {iteration + 1})。相对差异: {diff_norm / q_previous_norm:.2e}")
                 break
 
             if iteration == max_iterations - 1:
-                MNISTUtil.print_and_log(f"警告: 达到最大迭代次数 {max_iterations}，可能未完全收敛。")
+                UtilMNIST.print_and_log(f"警告: 达到最大迭代次数 {max_iterations}，可能未完全收敛。")
                 current_relative_diff = diff_norm / q_previous_norm if q_previous_norm > 1e-9 else float('inf')
-                MNISTUtil.print_and_log(f"最后相对差异: {current_relative_diff:.2e} (绝对差异: {diff_norm:.2e})")
+                UtilMNIST.print_and_log(f"最后相对差异: {current_relative_diff:.2e} (绝对差异: {diff_norm:.2e})")
 
         return q_current

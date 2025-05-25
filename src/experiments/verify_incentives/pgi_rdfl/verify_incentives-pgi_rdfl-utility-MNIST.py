@@ -16,7 +16,7 @@ from src.models.CNNMNIST import MNISTCNN, evaluate_data_for_dynamic_adjustment, 
 from src.roles.ComputingCenter import ComputingCenter
 from src.roles.DataOwner import DataOwner
 from src.roles.ModelOwner import ModelOwner
-from src.utils.UtilMNIST import MNISTUtil
+from src.utils.UtilMNIST import UtilMNIST
 from src.global_variable import parent_path, Lambda, Rho, Alpha, Epsilon, adjustment_literation
 
 
@@ -29,7 +29,7 @@ def get_project_root():
     current_dir = os.path.dirname(current_file_path)
 
     # 查找项目根目录
-    project_root = MNISTUtil.find_project_root(current_dir)
+    project_root = UtilMNIST.find_project_root(current_dir)
 
     project_root = project_root.replace("\\", "/")
 
@@ -63,14 +63,14 @@ def ready_for_task(rate):
     test_labels_path = f"{project_root}/data/dataset/MNIST/t10k-labels.idx1-ubyte"
 
     # 加载训练数据和测试数据
-    train_images, train_labels = MNISTUtil.load_mnist_dataset(train_images_path, train_labels_path)
-    test_images, test_labels = MNISTUtil.load_mnist_dataset(test_images_path, test_labels_path)
+    train_images, train_labels = UtilMNIST.load_mnist_dataset(train_images_path, train_labels_path)
+    test_images, test_labels = UtilMNIST.load_mnist_dataset(test_images_path, test_labels_path)
 
     # 创建DataOwner对象数组
     dataowners = [DataOwner(Lambda=Lambda, Rho=Rho) for _ in range(N)]  # 假设有5个DataOwner
 
     # 切分数据
-    MNISTUtil.split_data_to_dataowners_with_large_gap(dataowners, train_images, train_labels)
+    UtilMNIST.split_data_to_dataowners_with_large_gap(dataowners, train_images, train_labels)
 
     # 初始化ModelOwner
     modelowner = ModelOwner(model=init_model(rate=rate))
@@ -88,8 +88,8 @@ def init_model(rate):
     :param rate: 初始数据占MNIST的比例
     :return:
     """
-    MNISTUtil.print_and_log(f"初始数据占MNIST的比例：{rate * 100}%")
-    MNISTUtil.print_and_log("model initing...")
+    UtilMNIST.print_and_log(f"初始数据占MNIST的比例：{rate * 100}%")
+    UtilMNIST.print_and_log("model initing...")
 
     project_root = get_project_root()
 
@@ -97,7 +97,7 @@ def init_model(rate):
     train_labels_path = f"{project_root}/data/dataset/MNIST/train-labels.idx1-ubyte"
 
     # 加载训练数据和测试数据
-    train_images, train_labels = MNISTUtil.load_mnist_dataset(train_images_path, train_labels_path)
+    train_images, train_labels = UtilMNIST.load_mnist_dataset(train_images_path, train_labels_path)
 
     # 获取图像数量
     num_images = train_images.shape[0]
@@ -109,7 +109,7 @@ def init_model(rate):
     train_labels = train_labels[indices]
     train_images = train_images[indices]
 
-    train_loader = MNISTUtil.create_data_loader(train_images, train_labels, batch_size=64, shuffle=True)
+    train_loader = UtilMNIST.create_data_loader(train_images, train_labels, batch_size=64, shuffle=True)
 
     # 创建CNN模型
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -146,8 +146,8 @@ def dataowner_add_noise(dataowners, rate):
     # 第一次训练时：添加噪声，以1-MSE为fn
     for i, do in enumerate(dataowners):
         random_num = random.random() * rate
-        MNISTUtil.add_noise(do, severity=random_num)
-        MNISTUtil.print_and_log(f"DataOwner{i + 1}: noise random: {random_num}")
+        UtilMNIST.add_noise(do, severity=random_num)
+        UtilMNIST.print_and_log(f"DataOwner{i + 1}: noise random: {random_num}")
 
 
 # ModelOwner发布任务， DataOwner计算数据质量（Dataowner自己计算）
@@ -162,22 +162,22 @@ def evaluate_data_quality(dataowners):
     # 评价数据质量
     for i, do in enumerate(dataowners):
 
-        mse_scores = MNISTUtil.evaluate_quality(do, metric="mse")
-        snr_scores = MNISTUtil.evaluate_quality(do, metric="snr")
+        mse_scores = UtilMNIST.evaluate_quality(do, metric="mse")
+        snr_scores = UtilMNIST.evaluate_quality(do, metric="snr")
 
         # 计算图像的质量得分
         mse_sum = 0
         for j, (mse, snr) in enumerate(zip(mse_scores, snr_scores)):
-            # MNISTUtil.print_and_log(parent_path,f"DataOwner{i + 1}: Image {j + 1}: MSE = {mse:.4f}, SNR = {snr:.2f} dB")
+            # UtilMNIST.print_and_log(parent_path,f"DataOwner{i + 1}: Image {j + 1}: MSE = {mse:.4f}, SNR = {snr:.2f} dB")
             mse_sum += mse
         avg_mse = mse_sum / len(mse_scores)
         avg_f_list.append(1 - avg_mse)
 
-    MNISTUtil.print_and_log("DataOwners自行评估数据质量：")
-    MNISTUtil.print_and_log(f"数据质量列表avg_f_list: {avg_f_list}")
-    MNISTUtil.print_and_log(f"归一化后的数据质量列表avg_f_list: {MNISTUtil.normalize_list(avg_f_list)}")
+    UtilMNIST.print_and_log("DataOwners自行评估数据质量：")
+    UtilMNIST.print_and_log(f"数据质量列表avg_f_list: {avg_f_list}")
+    UtilMNIST.print_and_log(f"归一化后的数据质量列表avg_f_list: {UtilMNIST.normalize_list(avg_f_list)}")
 
-    return MNISTUtil.normalize_list(avg_f_list)
+    return UtilMNIST.normalize_list(avg_f_list)
 
 
 # ModelOwner计算模型总体支付，DataOwner确定提供的最优数据量
@@ -194,12 +194,12 @@ def calculate_optimal_payment_and_data(avg_f_list, last_xn_list):
 
     # 将q_star转化为x_opt
     # x_opt = [a / b for a, b in zip(q_star, avg_f_list)]
-    x_opt = MNISTUtil.power_transform_then_min_max_normalize(q_star)
+    x_opt = UtilMNIST.power_transform_then_min_max_normalize(q_star)
 
     # 将pn_list(p_star)做归一化
-    p_star = MNISTUtil.power_transform_then_min_max_normalize(p_star)
+    p_star = UtilMNIST.power_transform_then_min_max_normalize(p_star)
 
-    return MNISTUtil.compare_elements(x_opt, last_xn_list), p_star, eta_star, leader_utility, follower_utilities / N
+    return UtilMNIST.compare_elements(x_opt, last_xn_list), p_star, eta_star, leader_utility, follower_utilities / N
 
 
 # DataOwner结合自身数据质量来算模型贡献，分配ModelOwner的支付
@@ -218,10 +218,10 @@ def compute_contribution_rates(xn_list, avg_f_list, pn_list, best_Eta):
 
     sum_qn = sum(contributions)
 
-    MNISTUtil.print_and_log(f"ModelOwner的最优总支付：{best_Eta}")
+    UtilMNIST.print_and_log(f"ModelOwner的最优总支付：{best_Eta}")
     for i in range(len(xn_list)):
-        MNISTUtil.print_and_log(f"DataOwner{i + 1}:")
-        MNISTUtil.print_and_log(
+        UtilMNIST.print_and_log(f"DataOwner{i + 1}:")
+        UtilMNIST.print_and_log(
             f"pn:{pn_list[i]}; xn:{xn_list[i]}; 分配到的支付：{contributions[i] / sum_qn * best_Eta:.4f}")
 
 
@@ -237,7 +237,7 @@ def match_data_owners_to_cpc(xn_list, ComputingCenters, dataowners):
     preferences = GaleShapley.make_preferences(xn_list, ComputingCenters, Rho, dataowners)
     matching = GaleShapley.gale_shapley(proposals, preferences)
 
-    MNISTUtil.print_and_log(matching)
+    UtilMNIST.print_and_log(matching)
     return matching
 
 
@@ -259,11 +259,11 @@ def submit_data_to_cpc(matching, dataowners, ComputingCenters, xn_list, pn_list)
         ComputingCenter_match = re.search(r'\d+$', item[1])
         ComputingCenter_index = int(ComputingCenter_match.group()) - 1
 
-        MNISTUtil.print_and_log(f"DataOwner{dataowner_index + 1} 把数据交给 ComputingCenter{ComputingCenter_index + 1}")
+        UtilMNIST.print_and_log(f"DataOwner{dataowner_index + 1} 把数据交给 ComputingCenter{ComputingCenter_index + 1}")
 
         data_rate_list = [a * b for a, b in zip(xn_list, pn_list)]
 
-        MNISTUtil.dataowner_pass_data_to_cpc(dataowners[dataowner_index],
+        UtilMNIST.dataowner_pass_data_to_cpc(dataowners[dataowner_index],
                                              ComputingCenters[ComputingCenter_index],
                                              data_rate_list[dataowner_index])
 
@@ -285,7 +285,7 @@ def train_model_with_cpc(matching, cpcs, test_images, test_labels, literation, a
     # 指定轮次的时候要评估数据质量, 其余轮次直接训练即可
     # FIXME 这里的调整是失效的
     if literation == adjustment_literation:
-        MNISTUtil.print_and_log("重新调整fn，进而调整xn、Eta")
+        UtilMNIST.print_and_log("重新调整fn，进而调整xn、Eta")
         avg_f_list = [0] * N
         for item in matching.items():
             dataowner_match = re.search(r'\d+$', item[0])
@@ -293,15 +293,15 @@ def train_model_with_cpc(matching, cpcs, test_images, test_labels, literation, a
             cpc_match = re.search(r'\d+$', item[1])
             cpc_index = int(cpc_match.group()) - 1
 
-            MNISTUtil.print_and_log(
+            UtilMNIST.print_and_log(
                 f"正在评估{item[0]}的数据质量, 本轮评估的样本数据量为：{len(cpcs[cpc_index].imgData) :.2f} :")
             if len(cpcs[cpc_index].imgData) == 0:
-                MNISTUtil.print_and_log("数据量为0，跳过此轮评估")
+                UtilMNIST.print_and_log("数据量为0，跳过此轮评估")
                 continue
 
-            train_loader = MNISTUtil.create_data_loader(cpcs[cpc_index].imgData, cpcs[cpc_index].labelData,
+            train_loader = UtilMNIST.create_data_loader(cpcs[cpc_index].imgData, cpcs[cpc_index].labelData,
                                                         batch_size=64, shuffle=True)
-            test_loader = MNISTUtil.create_data_loader(test_images, test_labels, batch_size=64, shuffle=False)
+            test_loader = UtilMNIST.create_data_loader(test_images, test_labels, batch_size=64, shuffle=False)
 
             # 准备评估
             device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -312,20 +312,20 @@ def train_model_with_cpc(matching, cpcs, test_images, test_labels, literation, a
                                                                     model_path=f"{project_root}/data/model/mnist_cnn_model")
             avg_f_list[dataowner_index] = unitDataLossDiff
 
-        MNISTUtil.print_and_log("经过服务器调节后的真实数据质量：")
-        MNISTUtil.print_and_log(f"数据质量列表avg_f_list: {avg_f_list}")
-        MNISTUtil.print_and_log(f"归一化后的数据质量列表avg_f_list:{MNISTUtil.normalize_list(avg_f_list)}")
+        UtilMNIST.print_and_log("经过服务器调节后的真实数据质量：")
+        UtilMNIST.print_and_log(f"数据质量列表avg_f_list: {avg_f_list}")
+        UtilMNIST.print_and_log(f"归一化后的数据质量列表avg_f_list:{UtilMNIST.normalize_list(avg_f_list)}")
 
     # 准备训练
     project_root = get_project_root()
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    test_loader = MNISTUtil.create_data_loader(test_images, test_labels, batch_size=64, shuffle=False)
+    test_loader = UtilMNIST.create_data_loader(test_images, test_labels, batch_size=64, shuffle=False)
 
     new_accuracy = fine_tune_model(cpcs, matching, test_loader, lr=1e-5, device=str(device), num_epochs=5,
                                    force_update=force_update,
                                    model_path=f"{project_root}/data/model/mnist_cnn_model")
 
-    return MNISTUtil.normalize_list(avg_f_list), new_accuracy
+    return UtilMNIST.normalize_list(avg_f_list), new_accuracy
 
 
 # 实现联邦学习的模型训练函数
@@ -357,15 +357,15 @@ def fine_tune_model(cpcs, matching, test_loader, lr=1e-5, device='cpu', num_epoc
         cpc_match = re.search(r'\d+$', item[1])
         cpc_index = int(cpc_match.group()) - 1
 
-        MNISTUtil.print_and_log(f"{item[1]}调整模型中, 本轮训练的数据量为：{len(cpcs[cpc_index].imgData) :.2f} :")
+        UtilMNIST.print_and_log(f"{item[1]}调整模型中, 本轮训练的数据量为：{len(cpcs[cpc_index].imgData) :.2f} :")
         if len(cpcs[cpc_index].imgData) == 0:
-            MNISTUtil.print_and_log("数据量为0，跳过此轮调整")
+            UtilMNIST.print_and_log("数据量为0，跳过此轮调整")
             continue
 
-        train_loader = MNISTUtil.create_data_loader(cpcs[cpc_index].imgData, cpcs[cpc_index].labelData, batch_size=64,
+        train_loader = UtilMNIST.create_data_loader(cpcs[cpc_index].imgData, cpcs[cpc_index].labelData, batch_size=64,
                                                     shuffle=True)
 
-        MNISTUtil.print_and_log("开始本地模型训练...")
+        UtilMNIST.print_and_log("开始本地模型训练...")
         updated_params = fine_tune_mnist_cnn(
             parameters=global_params,
             train_loader=train_loader,
@@ -377,14 +377,14 @@ def fine_tune_model(cpcs, matching, test_loader, lr=1e-5, device='cpu', num_epoc
 
     # 4. 上传参数 (在实际的联邦学习系统中，这一步会将参数发送到服务器)
     # 在这个简化实现中，我们直接使用更新后的参数
-    MNISTUtil.print_and_log("本地训练完成，参数已准备好进行聚合")
+    UtilMNIST.print_and_log("本地训练完成，参数已准备好进行聚合")
 
     # 5. 合并参数 (实际联邦学习中，服务器会收集多个客户端的参数并合并)
     avg_params = average_models_parameters(updated_params_list)
-    MNISTUtil.print_and_log("参数聚合完成")
+    UtilMNIST.print_and_log("参数聚合完成")
 
     # 6. 选择更新 - 评估合并后的参数，如果性能更好则更新全局模型
-    MNISTUtil.print_and_log("评估聚合后的模型参数...")
+    UtilMNIST.print_and_log("评估聚合后的模型参数...")
     new_accuracy = update_model_with_parameters(
         model=model,
         parameters=avg_params,
@@ -394,52 +394,49 @@ def fine_tune_model(cpcs, matching, test_loader, lr=1e-5, device='cpu', num_epoc
         model_save_path=model_path
     )
 
-    MNISTUtil.print_and_log("模型更新流程完成")
+    UtilMNIST.print_and_log("模型更新流程完成")
     return new_accuracy
 
 
 if __name__ == "__main__":
-    MNISTUtil.print_and_log(f"**** {parent_path} 运行时间： {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} ****")
+    UtilMNIST.print_and_log(f"**** {parent_path} 运行时间： {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} ****")
 
     # 记录第 adjustment_literation+1 轮的 U(Eta) 和 U(qn)/N
     U_Eta_list = []
     U_qn_list = []
 
-    # 记录精确度
-    accuracy_list = []
-
     # 从这里开始进行不同数量客户端的循环 (前闭后开)
     for n in [9, 19, 29, 39, 49, 59, 69, 79, 89, 99]:
-        MNISTUtil.print_and_log(f"========================= 客户端数量: {n + 1} =========================")
+        UtilMNIST.print_and_log(f"========================= 客户端数量: {n + 1} =========================")
 
-        MNISTUtil.print_and_log("---------------------------------- 定义参数值 ----------------------------------")
+        UtilMNIST.print_and_log("---------------------------------- 定义参数值 ----------------------------------")
         Lambda, Rho, Alpha, Epsilon, N, M, SigmaM = define_parameters(Lambda=Lambda, Rho=Rho, Alpha=Alpha,
                                                                       Epsilon=Epsilon, M=n + 1, N=n + 1,
                                                                       SigmaM=[1] * (n + 1))
-        MNISTUtil.print_and_log("DONE")
+        UtilMNIST.print_and_log("DONE")
 
-        MNISTUtil.print_and_log("---------------------------------- 准备工作 ----------------------------------")
+        UtilMNIST.print_and_log("---------------------------------- 准备工作 ----------------------------------")
         dataowners, modelowner, ComputingCenters, test_images, test_labels = ready_for_task(rate=0.001)
-        MNISTUtil.print_and_log("DONE")
+        UtilMNIST.print_and_log("DONE")
 
         literation = 0  # 迭代次数
         adjustment_literation = adjustment_literation  # 要进行fn，xn，eta调整的轮次，注意值要取：轮次-1
         avg_f_list = []
         last_xn_list = [0] * N
         while True:
-            MNISTUtil.print_and_log(f"========================= literation: {literation + 1} =========================")
+            UtilMNIST.print_and_log(f"========================= literation: {literation + 1} =========================")
 
             # DataOwner自己报数据质量的机会只有一次
             if literation == 0:
-                MNISTUtil.print_and_log(f"----- literation {literation + 1}: 为 DataOwner 的数据添加噪声 -----")
+                UtilMNIST.print_and_log(f"----- literation {literation + 1}: 为 DataOwner 的数据添加噪声 -----")
                 dataowner_add_noise(dataowners, 0.1)
-                MNISTUtil.print_and_log("DONE")
+                UtilMNIST.print_and_log("DONE")
 
-                MNISTUtil.print_and_log(f"----- literation {literation + 1}: 计算 DataOwner 的数据质量 -----")
+                UtilMNIST.print_and_log(f"----- literation {literation + 1}: 计算 DataOwner 的数据质量 -----")
                 avg_f_list = evaluate_data_quality(dataowners)
-                MNISTUtil.print_and_log("DONE")
+                UtilMNIST.print_and_log("DONE")
 
-            MNISTUtil.print_and_log(
+            UtilMNIST.print_and_log(
                 f"----- literation {literation + 1}: 计算 ModelOwner 总体支付和 DataOwners 最优数据量 -----")
             xn_list, pn_list, best_Eta, U_Eta, U_qn = calculate_optimal_payment_and_data(avg_f_list, last_xn_list)
             last_xn_list = xn_list
@@ -448,40 +445,36 @@ if __name__ == "__main__":
             if literation == adjustment_literation + 1:
                 U_Eta_list.append(U_Eta)
                 U_qn_list.append(U_qn)
-            MNISTUtil.print_and_log("DONE")
+            UtilMNIST.print_and_log("DONE")
 
             # 提前中止
             if literation > adjustment_literation:
-                MNISTUtil.print_and_log(f"U_qn_list: {U_qn_list}")
-                MNISTUtil.print_and_log(f"U_Eta_list: {U_Eta_list}")
+                UtilMNIST.print_and_log(f"U_qn_list: {U_qn_list}")
+                UtilMNIST.print_and_log(f"U_Eta_list: {U_Eta_list}")
                 break
 
-            MNISTUtil.print_and_log(f"----- literation {literation + 1}: DataOwner 分配 ModelOwner 的支付 -----")
+            UtilMNIST.print_and_log(f"----- literation {literation + 1}: DataOwner 分配 ModelOwner 的支付 -----")
             compute_contribution_rates(xn_list, avg_f_list, pn_list, best_Eta)
-            MNISTUtil.print_and_log("DONE")
+            UtilMNIST.print_and_log("DONE")
 
             # 一旦匹配成功，就无法改变
             if literation == 0:
-                MNISTUtil.print_and_log(f"----- literation {literation + 1}: 匹配 DataOwner 和 ComputingCenter -----")
+                UtilMNIST.print_and_log(f"----- literation {literation + 1}: 匹配 DataOwner 和 ComputingCenter -----")
                 matching = match_data_owners_to_cpc(xn_list, ComputingCenters, dataowners)
-                MNISTUtil.print_and_log("DONE")
+                UtilMNIST.print_and_log("DONE")
 
-            MNISTUtil.print_and_log(f"----- literation {literation + 1}: DataOwner 向 ComputingCenter 提交数据 -----")
+            UtilMNIST.print_and_log(f"----- literation {literation + 1}: DataOwner 向 ComputingCenter 提交数据 -----")
             submit_data_to_cpc(matching, dataowners, ComputingCenters, xn_list, pn_list)
-            MNISTUtil.print_and_log("DONE")
+            UtilMNIST.print_and_log("DONE")
 
-            MNISTUtil.print_and_log(f"----- literation {literation + 1}: 模型训练 -----")
+            UtilMNIST.print_and_log(f"----- literation {literation + 1}: 模型训练 -----")
             avg_f_list, new_accuracy = train_model_with_cpc(matching, ComputingCenters, test_images, test_labels,
                                                             literation, avg_f_list, adjustment_literation,
                                                             force_update=True)
-            # 构建精准度列表
-            accuracy_list.append(new_accuracy)
-            MNISTUtil.print_and_log(f"accuracy_list: {accuracy_list}")
-
-            MNISTUtil.print_and_log("DONE")
+            UtilMNIST.print_and_log("DONE")
 
             literation += 1
 
-    MNISTUtil.print_and_log("pgirdfl 最终的列表：")
-    MNISTUtil.print_and_log(f"U_qn_list: {U_qn_list}")
-    MNISTUtil.print_and_log(f"U_Eta_list: {U_Eta_list}")
+    UtilMNIST.print_and_log("pgirdfl 最终的列表：")
+    UtilMNIST.print_and_log(f"U_qn_list: {U_qn_list}")
+    UtilMNIST.print_and_log(f"U_Eta_list: {U_Eta_list}")

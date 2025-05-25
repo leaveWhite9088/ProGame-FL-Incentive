@@ -1,6 +1,6 @@
 import numpy as np
 from scipy.optimize import minimize
-from src.utils.UtilMNIST import MNISTUtil
+from src.utils.UtilMNIST import UtilMNIST
 from src.algorithms.CournotGame import CournotGame
 
 class JointOptimization:
@@ -80,7 +80,7 @@ class JointOptimization:
         initial_guess = np.concatenate([initial_p, [initial_eta]])
         
         # 使用SLSQP方法求解约束优化问题
-        MNISTUtil.print_and_log("开始模型拥有者联合参数优化...")
+        UtilMNIST.print_and_log("开始模型拥有者联合参数优化...")
         result = minimize(
             objective_function,
             initial_guess,
@@ -90,9 +90,9 @@ class JointOptimization:
         )
         
         if result.success:
-            MNISTUtil.print_and_log("模型拥有者联合参数优化成功!")
+            UtilMNIST.print_and_log("模型拥有者联合参数优化成功!")
         else:
-            MNISTUtil.print_and_log(f"警告: 优化未成功收敛。原因: {result.message}")
+            UtilMNIST.print_and_log(f"警告: 优化未成功收敛。原因: {result.message}")
         
         # 提取结果
         optimal_variables = result.x
@@ -110,9 +110,76 @@ class JointOptimization:
         # 模型拥有者最大效用
         leader_utility = -result.fun
         
-        # MNISTUtil.print_and_log(f"最优p: {p_optimal}")
-        # MNISTUtil.print_and_log(f"最优eta: {eta_optimal:.4f}")
-        # MNISTUtil.print_and_log(f"对应的q: {q_optimal}")
-        # MNISTUtil.print_and_log(f"模型拥有者最大效用: {leader_utility:.4f}")
+        # UtilMNIST.print_and_log(f"最优p: {p_optimal}")
+        # UtilMNIST.print_and_log(f"最优eta: {eta_optimal:.4f}")
+        # UtilMNIST.print_and_log(f"对应的q: {q_optimal}")
+        # UtilMNIST.print_and_log(f"模型拥有者最大效用: {leader_utility:.4f}")
         
         return p_optimal, eta_optimal, q_optimal, leader_utility
+        
+    def optimize_with_fixed_p(self, p_fixed):
+        """
+        在固定概率分配p的情况下，只优化模型拥有者的总支付参数eta
+        
+        :param p_fixed: 固定的概率分配向量 (p_1, ..., p_N)
+        :return: 元组 (p_fixed, eta_optimal, q_optimal, leader_utility)
+                p_fixed: 输入的固定概率分配
+                eta_optimal: 最优总支付
+                q_optimal: 对应的数据拥有者最优质量选择
+                leader_utility: 领导者最大效用
+        """
+        
+        # 定义只优化eta的目标函数
+        def objective_function_eta(eta_array):
+            eta = eta_array[0]  # 将一维数组转为标量
+            
+            # 严格检查eta是否为正数
+            if eta <= 1e-6:  # 使用一个小的正数作为阈值
+                return 1e10  # 返回一个很大的惩罚值
+            
+            # 计算对应于(p_fixed,eta)的数据拥有者最优响应q
+            q_star_vector = self.cournot_solver.compute_equilibrium(p_fixed, eta)
+            
+            # 计算模型拥有者效用
+            utility = np.sum(p_fixed * q_star_vector) - eta
+            
+            # 因为minimize函数是最小化目标，所以返回负的效用
+            return -utility
+        
+        # eta的边界
+        bounds = [(0, None)]  # eta的边界
+        
+        # 初始猜测
+        initial_eta = 1.0  # 初始支付
+        initial_guess = np.array([initial_eta])
+        
+        # 使用SLSQP方法求解约束优化问题
+        UtilMNIST.print_and_log("开始模型拥有者的eta优化(固定p)...")
+        result = minimize(
+            objective_function_eta,
+            initial_guess,
+            method='SLSQP',
+            bounds=bounds,
+            options={'disp': True, 'maxiter': 500}
+        )
+        
+        if result.success:
+            UtilMNIST.print_and_log("模型拥有者的eta优化成功!")
+        else:
+            UtilMNIST.print_and_log(f"警告: eta优化未成功收敛。原因: {result.message}")
+        
+        # 提取结果
+        eta_optimal = result.x[0]
+        
+        # 计算对应的数据拥有者质量选择
+        q_optimal = self.cournot_solver.compute_equilibrium(p_fixed, eta_optimal)
+        
+        # 模型拥有者最大效用
+        leader_utility = -result.fun
+        
+        UtilMNIST.print_and_log(f"固定p: {p_fixed}")
+        UtilMNIST.print_and_log(f"最优eta: {eta_optimal:.4f}")
+        UtilMNIST.print_and_log(f"对应的q: {q_optimal}")
+        UtilMNIST.print_and_log(f"模型拥有者最大效用: {leader_utility:.4f}")
+        
+        return p_fixed, eta_optimal, q_optimal, leader_utility

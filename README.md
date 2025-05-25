@@ -31,25 +31,25 @@ non_two_way_selection
 
 ```shell
 # MNIST with non_two_way_selection -utility
-python -m src.experiments.verify_selection.non_two_way_selection.verify_selection-ntws-utility-MNIST.py --adjustment_literation -1 --parent_path log-verify_selection-utility
+python -m src.experiments.verify_selection.non_two_way_selection.verify_selection-ntws-utility-MNIST --adjustment_literation -1 --parent_path log-verify_selection-utility
 # MNIST with non_two_way_selection -accuracy
-python -m src.experiments.verify_selection.non_two_way_selection.verify_selection-ntws-accuracy-MNIST.py --adjustment_literation 100 --parent_path log-verify_selection-accuracy
+python -m src.experiments.verify_selection.non_two_way_selection.verify_selection-ntws-accuracy-MNIST --adjustment_literation 100 --parent_path log-verify_selection-accuracy
 ```
 
 random_selection
 
 ```shell
 # MNIST with random_selection -utility
-python -m src.experiments.verify_selection.random_selection.verify_selection-rs-utility-MNIST.py --adjustment_literation -1 --parent_path log-verify_selection-utility
+python -m src.experiments.verify_selection.random_selection.verify_selection-rs-utility-MNIST --adjustment_literation -1 --parent_path log-verify_selection-utility
 # MNIST with random_selection -accuracy
-python -m src.experiments.verify_selection.random_selection.verify_selection-rs-accuracy-MNIST.py --adjustment_literation 100 --parent_path log-verify_selection-accuracy
+python -m src.experiments.verify_selection.random_selection.verify_selection-rs-accuracy-MNIST --adjustment_literation 100 --parent_path log-verify_selection-accuracy
 ```
 
 two_way_selection
 
 ```shell
 # MNIST with two_way_selection -utility
-python -m src.experiments.verify_selection.two_way_selection.verify_selection-tws-utility-MNIST.py --adjustment_literation -1 --parent_path log-verify_selection-utility
+python -m src.experiments.verify_selection.two_way_selection.verify_selection-tws-utility-MNIST --adjustment_literation -1 --parent_path log-verify_selection-utility
 # MNIST with two_way_selection -accuracy
-python -m src.experiments.verify_selection.two_way_selection.verify_selection-tws-accuracy-MNIST.py --adjustment_literation 100 --parent_path log-verify_selection-accuracy
+python -m src.experiments.verify_selection.two_way_selection.verify_selection-tws-accuracy-MNIST --adjustment_literation 100 --parent_path log-verify_selection-accuracy
 ```

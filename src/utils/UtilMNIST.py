@@ -8,7 +8,7 @@ import os
 from src.global_variable import parent_path
 
 
-class MNISTUtil:
+class UtilMNIST:
 
     # 将MNIST数据集切分成不等的N份，并将数据分配给每个DataOwner对象
     @staticmethod
@@ -192,8 +192,8 @@ class MNISTUtil:
         :param label_file: 标签文件路径（.idx1-ubyte 文件）
         :return: 图像数组和标签数组
         """
-        images = MNISTUtil._load_mnist_images(image_file)
-        labels = MNISTUtil._load_mnist_labels(label_file)
+        images = UtilMNIST._load_mnist_images(image_file)
+        labels = UtilMNIST._load_mnist_labels(label_file)
         return images, labels
 
     # 将图像和标签数组封装成 PyTorch DataLoader
@@ -287,9 +287,9 @@ class MNISTUtil:
         noisy_data = []
         for img in dataowner.imgData:
             if noise_type == "gaussian":
-                noisy_data.append(MNISTUtil._add_gaussian_noise(img, severity))
+                noisy_data.append(UtilMNIST._add_gaussian_noise(img, severity))
             elif noise_type == "salt_and_pepper":
-                noisy_data.append(MNISTUtil._add_salt_and_pepper_noise(img, severity))
+                noisy_data.append(UtilMNIST._add_salt_and_pepper_noise(img, severity))
             else:
                 raise ValueError(f"Unsupported noise type: {noise_type}")
         dataowner.imgData = noisy_data
@@ -351,9 +351,9 @@ class MNISTUtil:
         quality_scores = []
         for original, noisy in zip(dataowner.originalData, dataowner.imgData):
             if metric == "mse":
-                quality_scores.append(MNISTUtil._calculate_mse(original, noisy))
+                quality_scores.append(UtilMNIST._calculate_mse(original, noisy))
             elif metric == "snr":
-                quality_scores.append(MNISTUtil._calculate_snr(original, noisy))
+                quality_scores.append(UtilMNIST._calculate_snr(original, noisy))
             else:
                 raise ValueError(f"Unsupported metric: {metric}")
         return quality_scores
@@ -394,7 +394,7 @@ class MNISTUtil:
         :param proportion:比例
         :return:
         """
-        cpc.imgData, cpc.labelData = MNISTUtil.sample_arrays(np.array(dataowner.imgData), np.array(dataowner.labelData),
+        cpc.imgData, cpc.labelData = UtilMNIST.sample_arrays(np.array(dataowner.imgData), np.array(dataowner.labelData),
                                                              proportion)
 
     # 定义一个函数，用于同时打印到控制台和文件
@@ -407,7 +407,7 @@ class MNISTUtil:
         current_dir = os.path.dirname(current_file_path)
 
         # 查找项目根目录
-        project_root = MNISTUtil.find_project_root(current_dir)
+        project_root = UtilMNIST.find_project_root(current_dir)
 
         if project_root is None:
             raise FileNotFoundError("未找到项目根目录，请确保项目根目录包含 README.md 文件")
@@ -486,3 +486,76 @@ class MNISTUtil:
             return [0.0] * len(transformed_data)
         normalized_data = [(x - min_value) / (max_value - min_value) for x in transformed_data]
         return normalized_data
+
+    @staticmethod
+    def calculate_average_fn(pn_list, fn_list):
+        """
+        计算有效的平均fn值
+        
+        检查pn_list中的每个元素，如果不为0，则将对应位置的fn_list元素累加并计算平均值
+        
+        :param pn_list: 概率列表，0或1的列表
+        :param fn_list: 对应的fn值列表
+        :return: 非零pn对应的fn的平均值
+        """
+        if len(pn_list) != len(fn_list):
+            raise ValueError("pn_list和fn_list的长度必须相同")
+            
+        total_fn = 0
+        count_nonzero = 0
+        
+        for pn, fn in zip(pn_list, fn_list):
+            if pn != 0:  # 如果pn不为0
+                total_fn += fn
+                count_nonzero += 1
+                
+        # 防止除零错误
+        if count_nonzero == 0:
+            UtilMNIST.print_and_log("警告: pn_list中没有非零元素")
+            return 0
+            
+        return total_fn / count_nonzero
+        
+    @staticmethod
+    def generate_random_binary_pn_list(n):
+        """
+        生成一个随机的二元列表
+        
+        列表中的每个元素有50%的概率是1，50%的概率是0
+        
+        :param n: 列表长度
+        :return: 随机生成的0-1列表
+        """
+        return np.random.randint(0, 2, n).tolist()
+        
+    @staticmethod
+    def generate_probability_based_pn_list(fn_list):
+        """
+        根据fn_list生成概率列表，并据此构建pn_list
+        
+        :param fn_list: 值列表
+        :return: 根据概率生成的0-1列表
+        """
+        # 确保fn_list中的值都是正数，可以作为概率基础
+        fn_list_np = np.array(fn_list)
+        
+        # 如果有负值，将所有值平移使最小值为0
+        if np.min(fn_list_np) < 0:
+            fn_list_np = fn_list_np - np.min(fn_list_np)
+            
+        # 归一化到[0,1]区间作为概率
+        if np.max(fn_list_np) > 0:
+            probabilities = fn_list_np / np.max(fn_list_np)
+        else:
+            # 如果所有值都是0，则概率都设为0.5
+            probabilities = np.ones_like(fn_list_np) * 0.5
+            
+        # 根据概率生成二元列表
+        pn_list = []
+        for prob in probabilities:
+            if np.random.random() < prob:
+                pn_list.append(1)
+            else:
+                pn_list.append(0)
+                
+        return pn_list
