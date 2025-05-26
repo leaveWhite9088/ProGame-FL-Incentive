@@ -405,7 +405,7 @@ if __name__ == "__main__":
     accuracy_list_total = []
 
     # 从这里开始进行不同数量客户端的循环 (前闭后开)
-    for n in [9, 19, 29, 39, 49, 59, 69, 79, 89, 99]:
+    for n in [9, 19, 29, 39, 49, 59]:
         UtilMNIST.print_and_log(f"========================= 客户端数量: {n + 1} =========================")
 
         UtilMNIST.print_and_log("---------------------------------- 定义参数值 ----------------------------------")
@@ -469,6 +469,11 @@ if __name__ == "__main__":
             avg_f_list, new_accuracy = train_model_with_cpc(matching, ComputingCenters, test_images, test_labels,
                                                             literation, avg_f_list, adjustment_literation,
                                                             force_update=True)
+
+            # 构建精准度列表
+            accuracy_list.append(new_accuracy)
+            UtilMNIST.print_and_log(f"accuracy_list: {accuracy_list}")
+
             UtilMNIST.print_and_log("DONE")
 
             literation += 1

@@ -19,7 +19,7 @@ parser = argparse.ArgumentParser()
 # 添加命令行参数
 parser.add_argument('--adjustment_literation', type=float, default=0.01, help="adjustment_literation")
 parser.add_argument('--parent_path', type=str, default="log-main", help="parent_path")
-parser.add_argument("--util", choices=["MNIST", "CIFAR10", "CIFAR100"], default="MNIST", help="util")
+parser.add_argument("--util", type=str, choices=["MNIST", "CIFAR10", "CIFAR100"], default="MNIST", help="util")
 
 # 解析命令行参数
 args = parser.parse_args()
