@@ -61,10 +61,10 @@ data = [[0.3435, 0.3507, 0.3611, 0.3637, 0.3662, 0.3739, 0.3782, 0.3817, 0.3914,
 styles = [
     {'color': '#1f77b4', 'marker': 'o', 'label': 'N=10'},  # 蓝色圆形
     {'color': '#ff7f0e', 'marker': 's', 'label': 'N=20'},  # 橙色方形
-    {'color': '#2ca02c', 'marker': 'D', 'linestyle': ':',  'label': 'N=30'},  # 绿色菱形
+    {'color': '#2ca02c', 'marker': 'D', 'linestyle': ':', 'label': 'N=30'},  # 绿色菱形
     {'color': '#d62728', 'marker': '^', 'label': 'N=40'},  # 红色上三角
     {'color': '#9467bd', 'marker': 'v', 'label': 'N=50'},  # 紫色下三角
-    {'color': '#8c564b', 'marker': 'P', 'label': 'N=60'}   # 棕色五边形
+    {'color': '#8c564b', 'marker': 'P', 'label': 'N=60'}  # 棕色五边形
 ]
 
 # 绘制多条折线
@@ -79,7 +79,7 @@ for line_data, style in zip(data, styles):
 plt.tick_params(axis='x', labelsize=14)
 plt.tick_params(axis='y', labelsize=14)
 plt.xlabel(r'$N$')
-plt.ylabel(r'$U_n$')
+plt.ylabel(r'$two-way-selection:accuracy$')
 
 # 显示辅助元素
 plt.legend()
