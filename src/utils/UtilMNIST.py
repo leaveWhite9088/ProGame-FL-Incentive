@@ -488,33 +488,34 @@ class UtilMNIST:
         return normalized_data
 
     @staticmethod
-    def calculate_average_fn(pn_list, fn_list):
+    def calculate_average_fn(pn_list, fn_list, xn_list):
         """
-        计算有效的平均fn值
+        计算加权平均fn值
         
-        检查pn_list中的每个元素，如果不为0，则将对应位置的fn_list元素累加并计算平均值
+        先将pn_list和xn_list对应项相乘形成新列表，然后与fn_list相乘形成分子，
+        最后以sum(xn_list)为分母计算加权平均值
         
         :param pn_list: 概率列表，0或1的列表
         :param fn_list: 对应的fn值列表
-        :return: 非零pn对应的fn的平均值
+        :param xn_list: 对应的权重列表
+        :return: 加权平均fn值
         """
-        if len(pn_list) != len(fn_list):
-            raise ValueError("pn_list和fn_list的长度必须相同")
+        if len(pn_list) != len(fn_list) or len(pn_list) != len(xn_list):
+            raise ValueError("pn_list、fn_list和xn_list的长度必须相同")
             
-        total_fn = 0
-        count_nonzero = 0
+        # 计算分母：xn_list的总和
+        denominator = sum(xn_list)
         
-        for pn, fn in zip(pn_list, fn_list):
-            if pn != 0:  # 如果pn不为0
-                total_fn += fn
-                count_nonzero += 1
-                
         # 防止除零错误
-        if count_nonzero == 0:
-            UtilMNIST.print_and_log("警告: pn_list中没有非零元素")
+        if denominator == 0:
+            UtilMNIST.print_and_log("警告: xn_list的总和为零")
             return 0
             
-        return total_fn / count_nonzero
+        # 计算分子：pn_list和xn_list先相乘，然后与fn_list相乘，最后求和
+        numerator = sum(pn * fn * xn for pn, fn, xn in zip(pn_list, fn_list, xn_list))
+        
+        # 返回加权平均值
+        return numerator / denominator
         
     @staticmethod
     def generate_random_binary_pn_list(n):
@@ -559,3 +560,51 @@ class UtilMNIST:
                 pn_list.append(0)
                 
         return pn_list
+        
+    @staticmethod
+    def generate_inverse_probability_based_pn_list(fn_list):
+        """
+        根据fn_list生成反向概率列表，并据此构建pn_list
+        fn值越小，pn为1的概率越大
+        
+        :param fn_list: 值列表
+        :return: 根据反向概率生成的0-1列表
+        """
+        # 确保fn_list中的值都是正数，可以作为概率基础
+        fn_list_np = np.array(fn_list)
+        
+        # 如果有负值，将所有值平移使最小值为0
+        if np.min(fn_list_np) < 0:
+            fn_list_np = fn_list_np - np.min(fn_list_np)
+            
+        # 归一化到[0,1]区间
+        if np.max(fn_list_np) > 0:
+            normalized_values = fn_list_np / np.max(fn_list_np)
+            # 反转概率：fn值越小，概率越大
+            probabilities = 1 - normalized_values
+        else:
+            # 如果所有值都是0，则概率都设为0.5
+            probabilities = np.ones_like(fn_list_np) * 0.5
+            
+        # 根据反向概率生成二元列表
+        pn_list = []
+        for prob in probabilities:
+            if np.random.random() < prob:
+                pn_list.append(1)
+            else:
+                pn_list.append(0)
+                
+        return pn_list
+        
+    @staticmethod
+    def generate_fix_binary_pn_list(n):
+        """
+        生成一个固定概率的二元列表
+        
+        列表中的每个元素固定有50%的概率是1，50%的概率是0
+        
+        :param n: 列表长度
+        :return: 使用固定0.5概率生成的0-1列表
+        """
+
+        return [0.5] * n

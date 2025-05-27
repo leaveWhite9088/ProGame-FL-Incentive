@@ -443,7 +443,7 @@ if __name__ == "__main__":
                 f"----- literation {literation + 1}: 计算 ModelOwner 总体支付和 DataOwners 最优数据量 -----")
 
             # 这里做一个pn_list
-            pn_list = UtilMNIST.generate_inverse_probability_based_pn_list(avg_f_list)
+            pn_list = UtilMNIST.generate_fix_binary_pn_list(N)
 
             xn_list, _, best_Eta, U_Eta, U_qn = calculate_optimal_payment_and_data(avg_f_list, last_xn_list, pn_list)
             last_xn_list = xn_list
@@ -487,7 +487,7 @@ if __name__ == "__main__":
 
             literation += 1
 
-    UtilMNIST.print_and_log("non_two_way_selection 最终的列表：")
+    UtilMNIST.print_and_log("random_selection 最终的列表：")
     UtilMNIST.print_and_log(f"selected_do_avg_fn_list: {selected_do_avg_fn_list}")
     UtilMNIST.print_and_log(f"U_qn_list: {U_qn_list}")
     UtilMNIST.print_and_log(f"U_Eta_list: {U_Eta_list}")

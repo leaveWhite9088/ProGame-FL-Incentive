@@ -440,7 +440,7 @@ if __name__ == "__main__":
                 f"----- literation {literation + 1}: 计算 ModelOwner 总体支付和 DataOwners 最优数据量 -----")
 
             # 这里做一个pn_list
-            pn_list = UtilMNIST.generate_probability_based_pn_list(avg_f_list)
+            pn_list = UtilMNIST.generate_inverse_probability_based_pn_list(avg_f_list)
 
             xn_list, _, best_Eta, U_Eta, U_qn = calculate_optimal_payment_and_data(avg_f_list, last_xn_list, pn_list)
             last_xn_list = xn_list

@@ -27,6 +27,15 @@ python -m src.experiments.verify_incentives.random.verify_incentives-random-util
 📊 Verify Selection Experiments
 Each verify incentives experiment takes about 30 minutes to run.
 
+all_selection
+
+```shell
+# MNIST with all_selection -utility
+python -m src.experiments.verify_selection.all_selection.verify_selection-ntws-utility-MNIST --adjustment_literation -1 --parent_path log-verify_selection-utility --util MNIST
+# MNIST with all_selection -accuracy
+python -m src.experiments.verify_selection.all_selection.verify_selection-ntws-accuracy-MNIST --adjustment_literation 100 --parent_path log-verify_selection-accuracy --util MNIST
+```
+
 non_two_way_selection
 
 ```shell

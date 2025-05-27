@@ -401,15 +401,11 @@ def fine_tune_model(cpcs, matching, test_loader, lr=1e-5, device='cpu', num_epoc
 if __name__ == "__main__":
     UtilMNIST.print_and_log(f"**** {parent_path} 运行时间： {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} ****")
 
-    # 记录第 adjustment_literation+1 轮的 U(Eta) 和 U(qn)/N
-    U_Eta_list = []
-    U_qn_list = []
-
-    # 记录被选中do的平均数据质量
-    selected_do_avg_fn_list = []
+    # 记录精确度
+    accuracy_list_total = []
 
     # 从这里开始进行不同数量客户端的循环 (前闭后开)
-    for n in [9, 19, 29, 39, 49, 59, 69, 79, 89, 99]:
+    for n in [9, 19, 29, 39, 49, 59]:
         UtilMNIST.print_and_log(f"========================= 客户端数量: {n + 1} =========================")
 
         UtilMNIST.print_and_log("---------------------------------- 定义参数值 ----------------------------------")
@@ -426,6 +422,7 @@ if __name__ == "__main__":
         adjustment_literation = adjustment_literation  # 要进行fn，xn，eta调整的轮次，注意值要取：轮次-1
         avg_f_list = []
         last_xn_list = [0] * N
+        accuracy_list = []
         while True:
             UtilMNIST.print_and_log(f"========================= literation: {literation + 1} =========================")
 
@@ -443,26 +440,15 @@ if __name__ == "__main__":
                 f"----- literation {literation + 1}: 计算 ModelOwner 总体支付和 DataOwners 最优数据量 -----")
 
             # 这里做一个pn_list
-            pn_list = UtilMNIST.generate_inverse_probability_based_pn_list(avg_f_list)
+            pn_list = UtilMNIST.generate_fix_binary_pn_list(N)
 
             xn_list, _, best_Eta, U_Eta, U_qn = calculate_optimal_payment_and_data(avg_f_list, last_xn_list, pn_list)
             last_xn_list = xn_list
 
-            # 只有在调整轮次之后的轮次才记录
-            if literation == adjustment_literation + 1:
-                U_Eta_list.append(U_Eta)
-                U_qn_list.append(U_qn)
-
-                # 计算平均数据质量
-                avg_fn = UtilMNIST.calculate_average_fn(pn_list, avg_f_list, xn_list)
-                selected_do_avg_fn_list.append(avg_fn)
-            UtilMNIST.print_and_log("DONE")
-
             # 提前中止
             if literation > adjustment_literation:
-                UtilMNIST.print_and_log(f"U_qn_list: {U_qn_list}")
-                UtilMNIST.print_and_log(f"U_Eta_list: {U_Eta_list}")
-                UtilMNIST.print_and_log(f"selected_do_avg_fn_list: {selected_do_avg_fn_list}")
+                UtilMNIST.print_and_log(f"accuracy_list: {accuracy_list}")
+                accuracy_list_total.append(accuracy_list)
                 break
 
             UtilMNIST.print_and_log(f"----- literation {literation + 1}: DataOwner 分配 ModelOwner 的支付 -----")
@@ -483,11 +469,14 @@ if __name__ == "__main__":
             avg_f_list, new_accuracy = train_model_with_cpc(matching, ComputingCenters, test_images, test_labels,
                                                             literation, avg_f_list, adjustment_literation,
                                                             force_update=True)
+
+            # 构建精准度列表
+            accuracy_list.append(new_accuracy)
+            UtilMNIST.print_and_log(f"accuracy_list: {accuracy_list}")
+
             UtilMNIST.print_and_log("DONE")
 
             literation += 1
 
-    UtilMNIST.print_and_log("non_two_way_selection 最终的列表：")
-    UtilMNIST.print_and_log(f"selected_do_avg_fn_list: {selected_do_avg_fn_list}")
-    UtilMNIST.print_and_log(f"U_qn_list: {U_qn_list}")
-    UtilMNIST.print_and_log(f"U_Eta_list: {U_Eta_list}")
+    UtilMNIST.print_and_log("random_selection 最终的列表：")
+    UtilMNIST.print_and_log(f"accuracy_list_total: {accuracy_list_total}")
