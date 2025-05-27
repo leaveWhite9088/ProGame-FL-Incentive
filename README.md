@@ -31,12 +31,12 @@ all_selection
 
 ```shell
 # MNIST with all_selection -utility
-python -m src.experiments.verify_selection.all_selection.verify_selection-ntws-utility-MNIST --adjustment_literation -1 --parent_path log-verify_selection-utility --util MNIST
+python -m src.experiments.verify_selection.all_selection.verify_selection-as-utility-MNIST --adjustment_literation -1 --parent_path log-verify_selection-utility --util MNIST
 # MNIST with all_selection -accuracy
-python -m src.experiments.verify_selection.all_selection.verify_selection-ntws-accuracy-MNIST --adjustment_literation 100 --parent_path log-verify_selection-accuracy --util MNIST
+python -m src.experiments.verify_selection.all_selection.verify_selection-as-accuracy-MNIST --adjustment_literation 100 --parent_path log-verify_selection-accuracy --util MNIST
 ```
 
-non_two_way_selection
+non_two_way_selection(暂时代替random)
 
 ```shell
 # MNIST with non_two_way_selection -utility

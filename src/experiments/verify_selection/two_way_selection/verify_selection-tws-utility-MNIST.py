@@ -450,7 +450,7 @@ if __name__ == "__main__":
                 U_qn_list.append(U_qn)
 
                 # 计算平均数据质量
-                avg_fn = UtilMNIST.calculate_average_fn(pn_list, avg_f_list)
+                avg_fn = UtilMNIST.calculate_average_fn(pn_list, avg_f_list, xn_list)
                 selected_do_avg_fn_list.append(avg_fn)
             UtilMNIST.print_and_log("DONE")
 

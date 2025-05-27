@@ -487,7 +487,7 @@ if __name__ == "__main__":
 
             literation += 1
 
-    UtilMNIST.print_and_log("random_selection 最终的列表：")
+    UtilMNIST.print_and_log("all_selection 最终的列表：")
     UtilMNIST.print_and_log(f"selected_do_avg_fn_list: {selected_do_avg_fn_list}")
     UtilMNIST.print_and_log(f"U_qn_list: {U_qn_list}")
     UtilMNIST.print_and_log(f"U_Eta_list: {U_Eta_list}")
