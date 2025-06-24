@@ -36,7 +36,7 @@ python -m src.experiments.verify_selection.all_selection.verify_selection-as-uti
 python -m src.experiments.verify_selection.all_selection.verify_selection-as-accuracy-MNIST --adjustment_literation 100 --parent_path log-verify_selection-accuracy --util MNIST
 ```
 
-non_two_way_selection(暂时代替random)
+non_two_way_selection(用其结果代替random结果)
 
 ```shell
 # MNIST with non_two_way_selection -utility
