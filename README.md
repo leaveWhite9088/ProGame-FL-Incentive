@@ -6,6 +6,9 @@ fixed Strategy
 ```shell
 # MNIST with fixed strategy -utility
 python -m src.experiments.verify_incentives.fixed.verify_incentives-fixed-utility-MNIST --adjustment_literation -1 --parent_path log-verify_incentives-utility --util MNIST
+
+# MNIST with fixed strategy -utility -test
+python -m src.experiments.verify_incentives.fixed.verify_incentives-fixed-utility-MNIST-test --adjustment_literation -1 --parent_path log-verify_incentives-utility --util MNIST
 ```
 
 PGI-RDFL(Our Method)
@@ -15,6 +18,10 @@ PGI-RDFL(Our Method)
 python -m src.experiments.verify_incentives.pgi_rdfl.verify_incentives-pgi_rdfl-utility-MNIST --adjustment_literation -1 --parent_path log-verify_incentives-utility --util MNIST
 # MNIST with PGI-RDFL -accuracy
 python -m src.experiments.verify_incentives.pgi_rdfl.verify_incentives-pgi_rdfl-accuracy-MNIST --adjustment_literation 99 --parent_path log-verify_incentives-accuracy --util MNIST
+
+# MNIST with PGI-RDFL -utility -test
+python -m src.experiments.verify_incentives.pgi_rdfl.verify_incentives-pgi_rdfl-utility-MNIST-test --adjustment_literation -1 --parent_path log-verify_incentives-utility --util MNIST
+
 ```
 
 random Strategy

@@ -608,3 +608,49 @@ class UtilMNIST:
         """
 
         return [0.5] * n
+
+    @staticmethod
+    def load_and_create_stratified_subset(images_path, labels_path, fraction=0.1):
+        """
+        加载完整的MNIST数据集，并从中创建一个按类别分层的子集。
+
+        这个函数确保每个类别（0-9）都按指定的比例被抽取，从而保持数据集的类别平衡。
+
+        :param images_path: 图像文件的路径 (e.g., 'train-images.idx3-ubyte')
+        :param labels_path: 标签文件的路径 (e.g., 'train-labels.idx1-ubyte')
+        :param fraction: 需要从每个类别中抽取的比例，默认为0.1 (10%)
+        :return: (subset_images, subset_labels) 两个打乱顺序后的numpy数组
+        """
+        # 假设 UtilMNIST 中已经有 load_mnist_dataset 这个函数
+        full_images, full_labels = UtilMNIST.load_mnist_dataset(images_path, labels_path)
+
+        print(f"正在从完整数据集中创建分层子集，抽样比例: {fraction * 100:.1f}%...")
+
+        subset_images_list = []
+        subset_labels_list = []
+
+        # 1. 对每个类别（0到9）进行循环
+        for class_id in range(10):
+            # 找到当前类别的所有样本的索引
+            indices_for_class = np.where(full_labels == class_id)[0]
+
+            # 计算要为这个类别抽取的样本数量
+            num_samples_to_select = int(len(indices_for_class) * fraction)
+
+            # 从当前类别的索引中，随机抽取指定数量的索引（不重复）
+            selected_indices = np.random.choice(indices_for_class, size=num_samples_to_select, replace=False)
+
+            # 根据选中的索引，获取对应的图像和标签
+            subset_images_list.append(full_images[selected_indices])
+            subset_labels_list.append(full_labels[selected_indices])
+
+        # 2. 将所有类别的子集合并成一个大的numpy数组
+        final_subset_images = np.concatenate(subset_images_list, axis=0)
+        final_subset_labels = np.concatenate(subset_labels_list, axis=0)
+
+        # 3. 对合并后的数据集进行整体随机打乱，这对于后续训练至关重要！
+        shuffled_indices = np.random.permutation(len(final_subset_labels))
+
+        print(f"子集创建完成，总样本数: {len(final_subset_labels)}")
+
+        return final_subset_images[shuffled_indices], final_subset_labels[shuffled_indices]
