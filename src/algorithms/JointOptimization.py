@@ -2,6 +2,7 @@ import numpy as np
 from scipy.optimize import minimize
 from src.utils import UtilT
 from src.algorithms.CournotGame import CournotGame
+from src.global_variable import Theta
 
 class JointOptimization:
     """
@@ -74,7 +75,7 @@ class JointOptimization:
             
             # Step 6: 给定 η^h 和 P^h, 更新 U_s
             q_star = self.cournot_solver.compute_equilibrium(p_vector, eta)
-            leader_utility = np.sum(p_vector * q_star) - eta
+            leader_utility = np.sum(p_vector * q_star) * Theta - eta
             
             # 检查收敛
             eta_change = abs(eta - eta_prev)
@@ -91,7 +92,7 @@ class JointOptimization:
         q_optimal = self.cournot_solver.compute_equilibrium(p_vector, eta)
         
         # 模型拥有者最大效用
-        leader_utility = np.sum(p_vector * q_optimal) - eta
+        leader_utility = np.sum(p_vector * q_optimal) * Theta - eta
         
         UtilT.print_and_log("模型拥有者联合参数优化完成!")
         # UtilT.print_and_log(f"最优p: {p_vector}")

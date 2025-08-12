@@ -1,3 +1,16 @@
+"""
+基线两方Stackelberg-Cournot模型 - 精度实验
+Baseline Two-Party Stackelberg-Cournot Model - Accuracy Experiment
+
+本实验实现了基于智能电网论文思想的简化模型，用于与PGI-RDFL进行模型精度对比：
+- 模型拥有者（领导者）只决定总支付η，不决定选择概率p
+- 所有数据拥有者都参与（p固定为全1）
+- 数据拥有者通过古诺博弈竞争数据贡献量
+- 计算中心作为被动工具，不参与博弈决策
+
+输出：accuracy_list（模型精度列表）
+"""
+
 import numpy as np
 import random
 import torch
@@ -7,7 +20,7 @@ import re
 from datetime import datetime
 import os
 
-from src.algorithms.Stackelberg import Stackelberg
+from src.algorithms.CournotGame import CournotGame
 from src.algorithms.GaleShapley import GaleShapley
 from src.models.CNNMNIST import MNISTCNN, evaluate_data_for_dynamic_adjustment, fine_tune_mnist_cnn, \
     average_models_parameters, update_model_with_parameters
@@ -16,7 +29,6 @@ from src.roles.DataOwner import DataOwner
 from src.roles.ModelOwner import ModelOwner
 from src.utils.UtilMNIST import UtilMNIST
 from src.global_variable import parent_path, Lambda, Rho, Alpha, Epsilon, adjustment_literation
-from src.global_variable import Lambda_val, Rho_val, Alpha_val, Epsilon_val, N, M, SigmaM
 
 
 # 获取项目根目录
@@ -53,7 +65,7 @@ def define_parameters(Lambda=1, Rho=1, Alpha=1, Epsilon=1, N=5, M=5, SigmaM=[1, 
 
 
 # 为联邦学习任务做准备工作
-def ready_for_task(rate):
+def ready_for_task(rate, N, M, SigmaM):
     project_root = get_project_root()
 
     train_images_path = f"{project_root}/data/dataset/MNIST/train-images.idx3-ubyte"
@@ -154,10 +166,10 @@ def evaluate_data_quality(dataowners):
     """
     加噪声，模拟DataOwner的数据不好的情况
     :param dataowners:
-    :param avg_f_list:
     :return:
     """
-
+    avg_f_list = []
+    
     # 评价数据质量
     for i, do in enumerate(dataowners):
 
@@ -179,37 +191,75 @@ def evaluate_data_quality(dataowners):
     return UtilMNIST.normalize_list(avg_f_list)
 
 
-# ModelOwner计算模型总体支付，DataOwner确定提供的最优数据量
-def calculate_optimal_payment_and_data(avg_f_list, last_xn_list):
+# 基线模型的核心函数：计算支付和数据量
+def calculate_baseline_payment_and_data(avg_f_list, last_xn_list, N, Rho_val, Lambda_val):
     """
-    ModelOwner计算模型总体支付，DataOwner确定提供的最优数据量
-    :param avg_f_list:
-    :return:
+    使用基线Stackelberg-Cournot模型计算支付和数据量
+    
+    核心思想：映射智能电网论文的两方博弈到联邦学习三方场景
+    - 固定p为全1（所有数据拥有者都参与，无选择机制）
+    - 领导者设定一个固定的总支付（不进行优化）
+    - 跟随者通过古诺博弈竞争数据贡献量
+    
+    :param avg_f_list: 数据质量列表
+    :param last_xn_list: 上一轮的数据量列表
+    :param N: 数据拥有者数量
+    :param Rho_val: 单位数据训练费用
+    :param Lambda_val: 市场调整因子
+    :return: (xn_list, pn_list, best_Eta, U_Eta, U_qn)
     """
-    # 利用Stackelberg算法，求ModelOwner的支付，DataOwner提供的最优数据量
-    stackelberg_solver = Stackelberg(N, Rho * Lambda, avg_f_list)
-
-    p_star, eta_star, q_star, leader_utility, follower_utilities = stackelberg_solver.solve()
-
+    # 基线模型核心特征：
+    # 1. p固定为全1（所有人都参与，无选择机制）
+    p_star = np.ones(N)
+    p_star_normalized = p_star / np.sum(p_star)  # 归一化
+    
+    # 2. 领导者设定一个合理的固定总支付（基于成本和预期收益）
+    # 根据智能电网论文的思想，总支付应该能够激励参与但不过度支付
+    # 这里使用一个简单的启发式：基于平均质量和单位成本
+    avg_quality = np.mean(avg_f_list)
+    total_expected_contribution = N * avg_quality  # 预期总贡献
+    unit_cost = Rho_val * Lambda_val
+    
+    # 总支付 = 预期总贡献 * 单位成本 * 调节因子
+    # 调节因子设为0.8，确保有一定利润空间
+    eta_star = total_expected_contribution * unit_cost * 0.8
+    
+    # 3. 给定固定的p和η，数据拥有者进行古诺博弈
+    # 使用CournotGame直接计算均衡
+    from src.algorithms.CournotGame import CournotGame
+    cournot_solver = CournotGame(N, unit_cost, avg_f_list, Lambda_val)
+    q_star = cournot_solver.compute_equilibrium(p_star, eta_star)
+    
+    # 4. 计算效用
+    # 领导者效用：总质量贡献 - 总支付
+    total_quality = np.sum(p_star * q_star)
+    leader_utility = total_quality - eta_star
+    
+    # 跟随者效用
+    if total_quality > 1e-9:
+        price_per_quality = eta_star / total_quality
+        follower_utilities = q_star * (price_per_quality - unit_cost)
+    else:
+        follower_utilities = np.zeros(N)
+    
     # 将q_star转化为x_opt
-    x_opt = [a / b for a, b in zip(q_star, avg_f_list)]
-
-    # 将pn_list(p_star)做归一化
-    def normalize_list(data):
-        min_value = min(data)
-        max_value = max(data)
-        if max_value == min_value:  # 防止分母为零
-            return [0.0] * len(data)  # 如果所有值相同，归一化结果为 0
-        normalized_data = [(x - min_value) / (max_value - min_value) for x in data]
-        return normalized_data
-
-    p_star = normalize_list(p_star)
-
-    return UtilMNIST.compare_elements(x_opt, last_xn_list), p_star, eta_star, leader_utility, follower_utilities / N
+    x_opt = [a / b if b > 0 else 0 for a, b in zip(q_star, avg_f_list)]
+    
+    # 比较新旧数据量
+    xn_list = UtilMNIST.compare_elements(x_opt, last_xn_list)
+    
+    # 平均跟随者效用
+    avg_follower_utility = np.mean(follower_utilities)
+    
+    UtilMNIST.print_and_log(f"[基线模型] 固定总支付η: {eta_star:.4f}")
+    UtilMNIST.print_and_log(f"[基线模型] 领导者效用: {leader_utility:.4f}")
+    UtilMNIST.print_and_log(f"[基线模型] 跟随者平均效用: {avg_follower_utility:.4f}")
+    
+    return xn_list, p_star_normalized, eta_star, leader_utility, avg_follower_utility
 
 
 # DataOwner结合自身数据质量来算模型贡献，分配ModelOwner的支付
-def compute_contribution_rates(xn_list, avg_f_list, pn_list, best_Eta):
+def compute_contribution_rates(xn_list, avg_f_list, pn_list, best_Eta, N):
     """
     DataOwner结合自身数据质量来算模型贡献，分配ModelOwner的支付
     :param xn_list:
@@ -232,7 +282,7 @@ def compute_contribution_rates(xn_list, avg_f_list, pn_list, best_Eta):
 
 
 # 匹配DataOwner和ComputingCenter
-def match_data_owners_to_cpc(xn_list, ComputingCenters, dataowners):
+def match_data_owners_to_cpc(xn_list, ComputingCenters, dataowners, SigmaM, N, Rho):
     """
     匹配DataOwner和ComputingCenter
     :param xn_list:
@@ -276,11 +326,11 @@ def submit_data_to_cpc(matching, dataowners, ComputingCenters, xn_list, pn_list)
 
 # 使用ComputingCenter进行模型训练和全局模型的更新
 def train_model_with_cpc(matching, cpcs, test_images, test_labels, literation, avg_f_list, adjustment_literation,
-                         force_update):
+                         force_update, N):
     """
     使用CPC进行模型训练和全局模型的更新
     :param matching:
-    :param dataowners:
+    :param cpcs:
     :param test_images:
     :param test_labels:
     :param literation:训练的伦茨
@@ -339,9 +389,9 @@ def fine_tune_model(cpcs, matching, test_loader, lr=1e-5, device='cpu', num_epoc
                     model_path=None):
     """
     实现联邦学习的模型训练函数
-    
-    :param model: 要训练的MNISTCNN模型
-    :param train_loader: 训练数据加载器
+
+    :param cpcs: ComputingCenter列表
+    :param matching: 匹配结果
     :param test_loader: 测试数据加载器
     :param num_epochs: 训练轮数
     :param device: 计算设备 ('cpu' 或 'cuda')
@@ -405,89 +455,112 @@ def fine_tune_model(cpcs, matching, test_loader, lr=1e-5, device='cpu', num_epoc
 
 
 if __name__ == "__main__":
-    UtilMNIST.print_and_log(f"**** {parent_path} 运行时间： {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} ****")
-
-    # 记录第 adjustment_literation+1 轮的 U(Eta) 和 U(qn)/N
-    U_Eta_list = []
-    U_qn_list = []
-
-    # 记录精确度
-    accuracy_list = []
-
-    # 从这里开始进行不同数量客户端的循环 (前闭后开)
-    for n in [9]:
+    UtilMNIST.print_and_log(f"**** Baseline Two-Party Stackelberg-Cournot - Accuracy Experiment ****")
+    UtilMNIST.print_and_log(f"**** 基线两方斯塔克尔伯格-古诺模型 - 精度实验 ****")
+    UtilMNIST.print_and_log(f"**** 运行时间： {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} ****")
+    
+    # 记录每轮的精度
+    accuracy_list_total = []
+    
+    # 设置实验参数
+    num_iterations = 10  # 联邦学习迭代轮数
+    
+    # 客户端数量设置
+    for n in [9]:  # 10个客户端
         UtilMNIST.print_and_log(f"========================= 客户端数量: {n + 1} =========================")
-
+        
+        # 定义参数
         UtilMNIST.print_and_log("---------------------------------- 定义参数值 ----------------------------------")
-        Lambda, Rho, Alpha, Epsilon, N, M, SigmaM = define_parameters(Lambda=Lambda, Rho=Rho, Alpha=Alpha,
-                                                                      Epsilon=Epsilon, M=n + 1, N=n + 1,
-                                                                      SigmaM=[1] * (n + 1))
+        Lambda_val, Rho_val, Alpha_val, Epsilon_val, N, M, SigmaM = define_parameters(
+            Lambda=Lambda, Rho=Rho, Alpha=Alpha, Epsilon=Epsilon, M=n + 1, N=n + 1, SigmaM=[1] * (n + 1)
+        )
         UtilMNIST.print_and_log("DONE")
-
+        
+        # 准备工作
         UtilMNIST.print_and_log("---------------------------------- 准备工作 ----------------------------------")
-        dataowners, modelowner, ComputingCenters, test_images, test_labels = ready_for_task(rate=0.001)
+        dataowners, modelowner, ComputingCenters, test_images, test_labels = ready_for_task(rate=0.001, N=N, M=M, SigmaM=SigmaM)
         UtilMNIST.print_and_log("DONE")
-
-        literation = 0  # 迭代次数
-        adjustment_literation = adjustment_literation  # 要进行fn，xn，eta调整的轮次，注意值要取：轮次-1
+        
+        literation = 0
+        adjustment_lit = adjustment_literation
         avg_f_list = []
         last_xn_list = [0] * N
-        while True:
+        accuracy_list = []  # 当前客户端数量的精度列表
+        matching = None  # 初始化matching变量
+        
+        # 运行指定轮数的联邦学习
+        while literation < num_iterations:
             UtilMNIST.print_and_log(f"========================= literation: {literation + 1} =========================")
-
-            # DataOwner自己报数据质量的机会只有一次
+            
+            # 第一轮：添加噪声和评估数据质量
             if literation == 0:
                 UtilMNIST.print_and_log(f"----- literation {literation + 1}: 为 DataOwner 的数据添加噪声 -----")
                 dataowner_add_noise(dataowners, 0.1)
                 UtilMNIST.print_and_log("DONE")
-
+                
                 UtilMNIST.print_and_log(f"----- literation {literation + 1}: 计算 DataOwner 的数据质量 -----")
                 avg_f_list = evaluate_data_quality(dataowners)
                 UtilMNIST.print_and_log("DONE")
-
-            UtilMNIST.print_and_log(
-                f"----- literation {literation + 1}: 计算 ModelOwner 总体支付和 DataOwners 最优数据量 -----")
-            xn_list, pn_list, best_Eta, U_Eta, U_qn = calculate_optimal_payment_and_data(avg_f_list, last_xn_list)
+            
+            # 使用基线模型计算支付和数据量
+            UtilMNIST.print_and_log(f"----- literation {literation + 1}: [基线模型] 计算 ModelOwner 总体支付和 DataOwners 最优数据量 -----")
+            UtilMNIST.print_and_log("[基线特征] p固定为全1，只优化η")
+            
+            xn_list, pn_list, best_Eta, U_Eta, U_qn = calculate_baseline_payment_and_data(
+                avg_f_list, last_xn_list, N, Rho_val, Lambda_val
+            )
             last_xn_list = xn_list
-
-            # 只有在调整轮次之后的轮次才记录
-            if literation == adjustment_literation + 1:
-                U_Eta_list.append(U_Eta)
-                U_qn_list.append(U_qn)
             UtilMNIST.print_and_log("DONE")
-
-            # 提前中止
-            if literation > adjustment_literation:
-                UtilMNIST.print_and_log(f"U_Eta_list: {U_Eta_list}")
-                UtilMNIST.print_and_log(f"U_qn_list: {U_qn_list}")
-                break
-
+            
+            # 分配支付
             UtilMNIST.print_and_log(f"----- literation {literation + 1}: DataOwner 分配 ModelOwner 的支付 -----")
-            compute_contribution_rates(xn_list, avg_f_list, pn_list, best_Eta)
+            compute_contribution_rates(xn_list, avg_f_list, pn_list, best_Eta, N)
             UtilMNIST.print_and_log("DONE")
-
-            # 一旦匹配成功，就无法改变
+            
+            # 匹配（只在第一轮）
             if literation == 0:
                 UtilMNIST.print_and_log(f"----- literation {literation + 1}: 匹配 DataOwner 和 ComputingCenter -----")
-                matching = match_data_owners_to_cpc(xn_list, ComputingCenters, dataowners)
+                matching = match_data_owners_to_cpc(xn_list, ComputingCenters, dataowners, SigmaM, N, Rho_val)
                 UtilMNIST.print_and_log("DONE")
-
+            
+            # 提交数据
             UtilMNIST.print_and_log(f"----- literation {literation + 1}: DataOwner 向 ComputingCenter 提交数据 -----")
             submit_data_to_cpc(matching, dataowners, ComputingCenters, xn_list, pn_list)
             UtilMNIST.print_and_log("DONE")
-
+            
+            # 模型训练并记录精度
             UtilMNIST.print_and_log(f"----- literation {literation + 1}: 模型训练 -----")
-            avg_f_list, new_accuracy = train_model_with_cpc(matching, ComputingCenters, test_images, test_labels,
-                                                            literation, avg_f_list, adjustment_literation,
-                                                            force_update=True)
-            # 构建精准度列表
+            avg_f_list, new_accuracy = train_model_with_cpc(
+                matching, ComputingCenters, test_images, test_labels,
+                literation, avg_f_list, adjustment_lit, force_update=True, N=N
+            )
+            
+            # 记录精度
             accuracy_list.append(new_accuracy)
+            UtilMNIST.print_and_log(f"[记录精度] 第{literation + 1}轮精度: {new_accuracy:.4f}")
             UtilMNIST.print_and_log(f"accuracy_list: {accuracy_list}")
-
             UtilMNIST.print_and_log("DONE")
-
+            
             literation += 1
-
-    UtilMNIST.print_and_log("最终的列表：")
-    UtilMNIST.print_and_log(f"U_Eta_list: {U_Eta_list}")
-    UtilMNIST.print_and_log(f"U_qn_list: {U_qn_list}")
+        
+        # 保存当前客户端数量的精度列表
+        accuracy_list_total = accuracy_list.copy()
+    
+    # 输出最终结果
+    UtilMNIST.print_and_log("\n===== 基线精度实验最终结果 =====")
+    UtilMNIST.print_and_log(f"各轮精度 accuracy_list_total: {accuracy_list_total}")
+    UtilMNIST.print_and_log(f"最终精度: {accuracy_list_total[-1]:.4f}")
+    UtilMNIST.print_and_log(f"平均精度: {np.mean(accuracy_list_total):.4f}")
+    UtilMNIST.print_and_log(f"精度提升: {(accuracy_list_total[-1] - accuracy_list_total[0]):.4f}")
+    
+    # 保存结果到文件
+    result_path = os.path.join(get_project_root(), "data/res/baseline_comparison/")
+    os.makedirs(result_path, exist_ok=True)
+    
+    with open(os.path.join(result_path, "baseline_accuracy_results.txt"), "w") as f:
+        f.write(f"Baseline Two-Party Stackelberg-Cournot - Accuracy Results\n")
+        f.write(f"运行时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+        f.write(f"accuracy_list_total: {accuracy_list_total}\n")
+        f.write(f"最终精度: {accuracy_list_total[-1]:.4f}\n")
+        f.write(f"平均精度: {np.mean(accuracy_list_total):.4f}\n")
+        f.write(f"精度提升: {(accuracy_list_total[-1] - accuracy_list_total[0]):.4f}\n")

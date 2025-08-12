@@ -69,3 +69,11 @@ python -m src.experiments.verify_selection.two_way_selection.verify_selection-tw
 # MNIST with two_way_selection -accuracy
 python -m src.experiments.verify_selection.two_way_selection.verify_selection-tws-accuracy-MNIST --adjustment_literation 100 --parent_path log-verify_selection-accuracy --util MNIST
 ```
+
+对比实验
+```shell
+# 对比效用
+python -m src.experiments.baseline_comparison.baseline_utility --adjustment_literation -1 --parent_path log-verify_selection-utility --util MNIST
+# 对比精度
+python -m src.experiments.baseline_comparison.baseline_accuracy --adjustment_literation 100 --parent_path log-verify_selection-utility --util MNIST
+```
