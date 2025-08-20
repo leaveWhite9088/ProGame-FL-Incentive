@@ -552,7 +552,7 @@ if __name__ == "__main__":
     UtilMNIST.print_and_log(f"数据拥有者平均效用 U_qn_list: {U_qn_list}")
     
     # 保存结果到文件
-    result_path = os.path.join(get_project_root(), "data/res/baseline_comparison/")
+    result_path = os.path.join(get_project_root(), "data/log/baseline_comparison/")
     os.makedirs(result_path, exist_ok=True)
     
     with open(os.path.join(result_path, "baseline_utility_results.txt"), "w") as f:
