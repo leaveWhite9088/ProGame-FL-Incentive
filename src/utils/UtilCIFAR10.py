@@ -9,6 +9,17 @@ import pickle
 from src.global_variable import parent_path
 
 class UtilCIFAR10:
+    # 查找项目根目录（假设项目根目录包含 README.md 文件）
+    @staticmethod
+    def find_project_root(current_dir):
+        # 向上逐层查找，直到找到项目根目录
+        while not os.path.exists(os.path.join(current_dir, 'README.md')):
+            current_dir = os.path.dirname(current_dir)
+            # 防止在 Unix/Linux 系统中向上查找过多
+            if current_dir == '/' or (os.name == 'nt' and current_dir == os.path.splitdrive(current_dir)[0] + '\\'):
+                return None
+        return current_dir
+
     @staticmethod
     def split_data_to_dataowners(dataowners, X_data, y_data):
         """
@@ -150,7 +161,7 @@ class UtilCIFAR10:
         # 加载训练数据批处理文件
         for i in range(1, 6):
             batch_file = os.path.join(data_dir, f'data_batch_{i}')
-            data, labels = UtilsCIFAR10._load_batch(batch_file)
+            data, labels = UtilCIFAR10._load_batch(batch_file)
             train_data.append(data)
             train_labels.extend(labels)
         train_data = np.vstack(train_data)
@@ -158,7 +169,7 @@ class UtilCIFAR10:
 
         # 加载测试数据批处理文件
         test_batch_file = os.path.join(data_dir, 'test_batch')
-        test_data, test_labels = UtilsCIFAR10._load_batch(test_batch_file)
+        test_data, test_labels = UtilCIFAR10._load_batch(test_batch_file)
 
         return train_data, train_labels, test_data, test_labels
 
@@ -220,9 +231,9 @@ class UtilCIFAR10:
         noisy_data = []
         for img in dataowner.imgData:
             if noise_type == "gaussian":
-                noisy_data.append(UtilsCIFAR10._add_gaussian_noise(img, severity))
+                noisy_data.append(UtilCIFAR10._add_gaussian_noise(img, severity))
             elif noise_type == "salt_and_pepper":
-                noisy_data.append(UtilsCIFAR10._add_salt_and_pepper_noise(img, severity))
+                noisy_data.append(UtilCIFAR10._add_salt_and_pepper_noise(img, severity))
             else:
                 raise ValueError(f"Unsupported noise type: {noise_type}")
         dataowner.imgData = noisy_data
@@ -284,9 +295,9 @@ class UtilCIFAR10:
         quality_scores = []
         for original, noisy in zip(dataowner.originalData, dataowner.imgData):
             if metric == "mse":
-                quality_scores.append(UtilsCIFAR10._calculate_mse(original, noisy))
+                quality_scores.append(UtilCIFAR10._calculate_mse(original, noisy))
             elif metric == "snr":
-                quality_scores.append(UtilsCIFAR10._calculate_snr(original, noisy))
+                quality_scores.append(UtilCIFAR10._calculate_snr(original, noisy))
             else:
                 raise ValueError(f"Unsupported metric: {metric}")
         return quality_scores
@@ -326,7 +337,7 @@ class UtilCIFAR10:
         :param proportion:比例
         :return:
         """
-        cpc.imgData, cpc.labelData = UtilsCIFAR10.sample_arrays(np.array(dataowner.imgData),
+        cpc.imgData, cpc.labelData = UtilCIFAR10.sample_arrays(np.array(dataowner.imgData),
                                                                   np.array(dataowner.labelData), proportion)
 
     @staticmethod
@@ -439,7 +450,7 @@ class UtilCIFAR10:
         
         # 防止除零错误
         if denominator == 0:
-            UtilsCIFAR10.print_and_log(parent_path, "警告: xn_list的总和为零")
+            UtilCIFAR10.print_and_log(parent_path, "警告: xn_list的总和为零")
             return 0
             
         # 计算分子：pn_list和xn_list先相乘，然后与fn_list相乘，最后求和
@@ -553,7 +564,7 @@ class UtilCIFAR10:
         """
         # 加载完整数据集
         # 假设存在一个方法可以加载CIFAR10数据
-        train_data, train_labels, _, _ = UtilsCIFAR10.load_cifar10_dataset(images_path)
+        train_data, train_labels, _, _ = UtilCIFAR10.load_cifar10_dataset(images_path)
         full_images, full_labels = train_data, train_labels
 
         print(f"正在从完整数据集中创建分层子集，抽样比例: {fraction * 100:.1f}%...")
