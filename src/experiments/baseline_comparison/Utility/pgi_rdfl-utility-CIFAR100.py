@@ -117,7 +117,7 @@ def init_model(rate):
     train_labels = train_labels[indices]
     train_data = train_data[indices]
 
-    train_loader = UtilCIFAR100.create_data_loader(train_data, train_labels, batch_size=64, shuffle=True)
+    train_loader = UtilCIFAR100.create_data_loader(train_data, train_labels, batch_size=64, shuffle=True, num_workers=0)
 
     # 创建CNN模型
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -310,8 +310,8 @@ def train_model_with_cpc(matching, cpcs, test_images, test_labels, literation, a
                 continue
 
             train_loader = UtilCIFAR100.create_data_loader(cpcs[cpc_index].imgData, cpcs[cpc_index].labelData,
-                                                        batch_size=64, shuffle=True)
-            test_loader = UtilCIFAR100.create_data_loader(test_images, test_labels, batch_size=64, shuffle=False)
+                                                        batch_size=64, shuffle=True, num_workers=0)
+            test_loader = UtilCIFAR100.create_data_loader(test_images, test_labels, batch_size=64, shuffle=False, num_workers=0)
 
             # 准备评估
             device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -329,7 +329,7 @@ def train_model_with_cpc(matching, cpcs, test_images, test_labels, literation, a
     # 准备训练
     project_root = get_project_root()
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    test_loader = UtilCIFAR100.create_data_loader(test_images, test_labels, batch_size=64, shuffle=False)
+    test_loader = UtilCIFAR100.create_data_loader(test_images, test_labels, batch_size=64, shuffle=False, num_workers=0)
 
     new_accuracy = fine_tune_model(cpcs, matching, test_loader, lr=1e-5, device=str(device), num_epochs=5,
                                    force_update=force_update,
@@ -373,7 +373,7 @@ def fine_tune_model(cpcs, matching, test_loader, lr=1e-5, device='cpu', num_epoc
             continue
 
         train_loader = UtilCIFAR100.create_data_loader(cpcs[cpc_index].imgData, cpcs[cpc_index].labelData, batch_size=64,
-                                                    shuffle=True)
+                                                    shuffle=True, num_workers=0)
 
         UtilCIFAR100.print_and_log(parent_path, "开始本地模型训练...")
         updated_params = fine_tune_cifar100_cnn(

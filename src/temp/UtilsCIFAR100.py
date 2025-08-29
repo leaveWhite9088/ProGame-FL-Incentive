@@ -1,25 +1,11 @@
 import struct
 import numpy as np
 import torch
-from sklearn.preprocessing import PowerTransformer
 from torch.utils.data import TensorDataset, DataLoader
 import os
 import pickle
 
-from src.global_variable import parent_path
-
-class UtilCIFAR100:
-    # 查找项目根目录（假设项目根目录包含 README.md 文件）
-    @staticmethod
-    def find_project_root(current_dir):
-        # 向上逐层查找，直到找到项目根目录
-        while not os.path.exists(os.path.join(current_dir, 'README.md')):
-            current_dir = os.path.dirname(current_dir)
-            # 防止在 Unix/Linux 系统中向上查找过多
-            if current_dir == '/' or (os.name == 'nt' and current_dir == os.path.splitdrive(current_dir)[0] + '\\'):
-                return None
-        return current_dir
-
+class UtilsCIFAR100:
     @staticmethod
     def split_data_to_dataowners(dataowners, X_data, y_data):
         """
@@ -94,13 +80,13 @@ class UtilCIFAR100:
         print("Weights:", weights)
         print("Split sizes:", split_sizes)
 
-    # 将CIFAR100数据集切分成N等份，并将数据分配给每个DataOwner对象
+    # 将CIFAR10数据集切分成N等份，并将数据分配给每个DataOwner对象
     @staticmethod
     def split_data_to_dataowners_evenly(dataowners, X_data, y_data):
         """
-        将CIFAR100数据集切分成N等份，并将数据分配给每个DataOwner对象
+        将CIFAR10数据集切分成N等份，并将数据分配给每个DataOwner对象
         :param dataowners: 一个长度为N的DataOwner对象数组
-        :param X_data: 数据集的特征（例如CIFAR100的图像数据）
+        :param X_data: 数据集的特征（例如CIFAR10的图像数据）
         :param y_data: 数据集的标签
         :return: None (每个DataOwner对象将保存其对应的数据)
         """
@@ -158,11 +144,11 @@ class UtilCIFAR100:
         """
         # 加载训练数据
         train_batch_file = os.path.join(data_dir, 'train')
-        train_data, train_labels = UtilCIFAR100._load_batch(train_batch_file)
+        train_data, train_labels = UtilsCIFAR100._load_batch(train_batch_file)
 
         # 加载测试数据
         test_batch_file = os.path.join(data_dir, 'test')
-        test_data, test_labels = UtilCIFAR100._load_batch(test_batch_file)
+        test_data, test_labels = UtilsCIFAR100._load_batch(test_batch_file)
 
         return train_data, train_labels, test_data, test_labels
 
@@ -184,7 +170,7 @@ class UtilCIFAR100:
         return fine_label_names, coarse_label_names
 
     @staticmethod
-    def create_data_loader(images, labels, batch_size=64, shuffle=True, num_workers=0):
+    def create_data_loader(images, labels, batch_size=64, shuffle=True, num_workers=4):
         """
         创建DataLoader对象
         :param images: 图像数据，形状为 (num_samples, 3, 32, 32)
@@ -242,9 +228,9 @@ class UtilCIFAR100:
         noisy_data = []
         for img in dataowner.imgData:
             if noise_type == "gaussian":
-                noisy_data.append(UtilCIFAR100._add_gaussian_noise(img, severity))
+                noisy_data.append(UtilsCIFAR100._add_gaussian_noise(img, severity))
             elif noise_type == "salt_and_pepper":
-                noisy_data.append(UtilCIFAR100._add_salt_and_pepper_noise(img, severity))
+                noisy_data.append(UtilsCIFAR100._add_salt_and_pepper_noise(img, severity))
             else:
                 raise ValueError(f"Unsupported noise type: {noise_type}")
         dataowner.imgData = noisy_data
@@ -306,9 +292,9 @@ class UtilCIFAR100:
         quality_scores = []
         for original, noisy in zip(dataowner.originalData, dataowner.imgData):
             if metric == "mse":
-                quality_scores.append(UtilCIFAR100._calculate_mse(original, noisy))
+                quality_scores.append(UtilsCIFAR100._calculate_mse(original, noisy))
             elif metric == "snr":
-                quality_scores.append(UtilCIFAR100._calculate_snr(original, noisy))
+                quality_scores.append(UtilsCIFAR100._calculate_snr(original, noisy))
             else:
                 raise ValueError(f"Unsupported metric: {metric}")
         return quality_scores
@@ -348,7 +334,7 @@ class UtilCIFAR100:
         :param proportion:比例
         :return:
         """
-        cpc.imgData, cpc.labelData = UtilCIFAR100.sample_arrays(np.array(dataowner.imgData),
+        cpc.imgData, cpc.labelData = UtilsCIFAR100.sample_arrays(np.array(dataowner.imgData),
                                                                    np.array(dataowner.labelData), proportion)
 
     @staticmethod
@@ -408,7 +394,7 @@ class UtilCIFAR100:
         if max_val == min_val:  # 如果所有元素都相同，直接返回全1列表
             return [1] * len(lst)
 
-        normalized_lst = [0.5 + 0.5 * ((x - min_val) / (max_val - min_val)) for x in lst]
+        normalized_lst = [0.9 + 0.1 * ((x - min_val) / (max_val - min_val)) for x in lst]
         return normalized_lst
 
     @staticmethod
@@ -419,192 +405,3 @@ class UtilCIFAR100:
         # 使用列表推导式和zip函数逐个比较元素
         comparison_results = [x if x > y else y for x, y in zip(list1, list2)]
         return comparison_results
-
-    @staticmethod
-    def power_transform_then_min_max_normalize(data):
-        """
-        使用Yeo-Johnson幂变换使数据接近高斯分布，然后进行Min-Max归一化。
-        """
-        data_np = np.array(data).reshape(-1, 1)
-
-        # method='yeo-johnson' 支持正数、负数和零，对于您的数据更通用
-        # standardize=False 意味着只进行幂变换，不进行Z-score标准化
-        pt = PowerTransformer(method='yeo-johnson', standardize=False)
-        transformed_data = pt.fit_transform(data_np).flatten().tolist()
-
-        # 之后再进行Min-Max归一化
-        min_value = min(transformed_data)
-        max_value = max(transformed_data)
-        if max_value == min_value:
-            return [0.0] * len(transformed_data)
-        normalized_data = [(x - min_value) / (max_value - min_value) for x in transformed_data]
-        return normalized_data
-
-    @staticmethod
-    def calculate_average_fn(pn_list, fn_list, xn_list):
-        """
-        计算加权平均fn值
-        
-        先将pn_list和xn_list对应项相乘形成新列表，然后与fn_list相乘形成分子，
-        最后以sum(xn_list)为分母计算加权平均值
-        
-        :param pn_list: 概率列表，0或1的列表
-        :param fn_list: 对应的fn值列表
-        :param xn_list: 对应的权重列表
-        :return: 加权平均fn值
-        """
-        if len(pn_list) != len(fn_list) or len(pn_list) != len(xn_list):
-            raise ValueError("pn_list、fn_list和xn_list的长度必须相同")
-            
-        # 计算分母：xn_list的总和
-        denominator = sum(xn_list)
-        
-        # 防止除零错误
-        if denominator == 0:
-            UtilCIFAR100.print_and_log(parent_path, "警告: xn_list的总和为零")
-            return 0
-            
-        # 计算分子：pn_list和xn_list先相乘，然后与fn_list相乘，最后求和
-        numerator = sum(pn * fn * xn for pn, fn, xn in zip(pn_list, fn_list, xn_list))
-        
-        # 返回加权平均值
-        return numerator / denominator
-        
-    @staticmethod
-    def generate_random_binary_pn_list(n):
-        """
-        生成一个随机的二元列表
-        
-        列表中的每个元素有50%的概率是1，50%的概率是0
-        
-        :param n: 列表长度
-        :return: 随机生成的0-1列表
-        """
-        return np.random.randint(0, 2, n).tolist()
-        
-    @staticmethod
-    def generate_probability_based_pn_list(fn_list):
-        """
-        根据fn_list生成概率列表，并据此构建pn_list
-        
-        :param fn_list: 值列表
-        :return: 根据概率生成的0-1列表
-        """
-        # 确保fn_list中的值都是正数，可以作为概率基础
-        fn_list_np = np.array(fn_list)
-        
-        # 如果有负值，将所有值平移使最小值为0
-        if np.min(fn_list_np) < 0:
-            fn_list_np = fn_list_np - np.min(fn_list_np)
-            
-        # 归一化到[0,1]区间作为概率
-        if np.max(fn_list_np) > 0:
-            probabilities = fn_list_np / np.max(fn_list_np)
-        else:
-            # 如果所有值都是0，则概率都设为0.5
-            probabilities = np.ones_like(fn_list_np) * 0.5
-            
-        # 根据概率生成二元列表
-        pn_list = []
-        for prob in probabilities:
-            if np.random.random() < prob:
-                pn_list.append(1)
-            else:
-                pn_list.append(0)
-                
-        return pn_list
-        
-    @staticmethod
-    def generate_inverse_probability_based_pn_list(fn_list):
-        """
-        根据fn_list生成反向概率列表，并据此构建pn_list
-        fn值越小，pn为1的概率越大
-        
-        :param fn_list: 值列表
-        :return: 根据反向概率生成的0-1列表
-        """
-        # 确保fn_list中的值都是正数，可以作为概率基础
-        fn_list_np = np.array(fn_list)
-        
-        # 如果有负值，将所有值平移使最小值为0
-        if np.min(fn_list_np) < 0:
-            fn_list_np = fn_list_np - np.min(fn_list_np)
-            
-        # 归一化到[0,1]区间
-        if np.max(fn_list_np) > 0:
-            normalized_values = fn_list_np / np.max(fn_list_np)
-            # 反转概率：fn值越小，概率越大
-            probabilities = 1 - normalized_values
-        else:
-            # 如果所有值都是0，则概率都设为0.5
-            probabilities = np.ones_like(fn_list_np) * 0.5
-            
-        # 根据反向概率生成二元列表
-        pn_list = []
-        for prob in probabilities:
-            if np.random.random() < prob:
-                pn_list.append(1)
-            else:
-                pn_list.append(0)
-                
-        return pn_list
-        
-    @staticmethod
-    def generate_fix_binary_pn_list(n):
-        """
-        生成一个固定概率的二元列表
-        
-        列表中的每个元素固定有50%的概率是1，50%的概率是0
-        
-        :param n: 列表长度
-        :return: 使用固定0.5概率生成的0-1列表
-        """
-        return [0.5] * n
-
-    @staticmethod
-    def load_and_create_stratified_subset(images_path, labels_path, fraction=0.1):
-        """
-        加载完整的CIFAR100数据集，并从中创建一个按类别分层的子集。
-
-        这个函数确保每个类别（0-99）都按指定的比例被抽取，从而保持数据集的类别平衡。
-
-        :param images_path: 图像文件的路径 (如指向包含所有训练数据的目录)
-        :param labels_path: 标签文件的路径 
-        :param fraction: 需要从每个类别中抽取的比例，默认为0.1 (10%)
-        :return: (subset_images, subset_labels) 两个打乱顺序后的numpy数组
-        """
-        # 加载完整数据集
-        # 假设存在一个方法可以加载CIFAR100数据
-        train_data, train_labels, _, _ = UtilCIFAR100.load_cifar100_dataset(images_path)
-        full_images, full_labels = train_data, train_labels
-
-        print(f"正在从完整数据集中创建分层子集，抽样比例: {fraction * 100:.1f}%...")
-
-        subset_images_list = []
-        subset_labels_list = []
-
-        # 1. 对每个类别（0到99）进行循环
-        for class_id in range(100):
-            # 找到当前类别的所有样本的索引
-            indices_for_class = np.where(full_labels == class_id)[0]
-
-            # 计算要为这个类别抽取的样本数量
-            num_samples_to_select = int(len(indices_for_class) * fraction)
-
-            # 从当前类别的索引中，随机抽取指定数量的索引（不重复）
-            selected_indices = np.random.choice(indices_for_class, size=num_samples_to_select, replace=False)
-
-            # 根据选中的索引，获取对应的图像和标签
-            subset_images_list.append(full_images[selected_indices])
-            subset_labels_list.append(full_labels[selected_indices])
-
-        # 2. 将所有类别的子集合并成一个大的numpy数组
-        final_subset_images = np.concatenate(subset_images_list, axis=0)
-        final_subset_labels = np.concatenate(subset_labels_list, axis=0)
-
-        # 3. 对合并后的数据集进行整体随机打乱，这对于后续训练至关重要！
-        shuffled_indices = np.random.permutation(len(final_subset_labels))
-
-        print(f"子集创建完成，总样本数: {len(final_subset_labels)}")
-
-        return final_subset_images[shuffled_indices], final_subset_labels[shuffled_indices]

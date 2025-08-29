@@ -28,7 +28,7 @@ class CIFAR100CNN(nn.Module):
         self.dropout = nn.Dropout(0.25)
 
         # 定义全连接层
-        self.fc1 = nn.Linear(256 * 4 * 4, 512)  # 输入特征是 4x4x256
+        self.fc1 = nn.Linear(256 * 8 * 8, 512)  # 输入特征是 8x8x256
         self.fc2 = nn.Linear(512, num_classes)  # 输出类别数量
         self.dropout_fc = nn.Dropout(0.5)
 
@@ -50,7 +50,7 @@ class CIFAR100CNN(nn.Module):
         x = self.pool(F.relu(self.conv4(x)))  # 第四层卷积 + ReLU + 池化
         x = self.dropout(x)
 
-        x = x.view(-1, 256 * 4 * 4)  # 展平，CIFAR100经过三次池化后是4x4
+        x = x.view(-1, 256 * 8 * 8)  # 展平，CIFAR100经过两次池化后是8x8
         x = F.relu(self.fc1(x))  # 全连接层1 + ReLU
         x = self.dropout_fc(x)
         x = self.fc2(x)  # 全连接层2（输出层）
@@ -206,7 +206,7 @@ def fine_tune_cifar100_cnn(parameters, train_loader, num_epochs=5, device='cpu',
     :return: 训练后的模型参数字典
     """
     # 创建新的模型实例
-    model = CIFAR100CNN().to(device)
+    model = CIFAR100CNN(num_classes=100).to(device)
 
     # 应用传入的参数
     model.set_parameters(parameters)
@@ -297,7 +297,7 @@ def update_model_with_parameters(model, parameters, test_loader, device='cpu', f
         UtilCIFAR100.print_and_log(parent_path, "强制更新")
 
         # 创建一个临时模型来评估新参数的性能
-        temp_model = CIFAR100CNN().to(device)
+        temp_model = CIFAR100CNN(num_classes=100).to(device)
         temp_model.set_parameters(parameters)
 
         # 评估新参数的准确率
@@ -326,7 +326,7 @@ def update_model_with_parameters(model, parameters, test_loader, device='cpu', f
         UtilCIFAR100.print_and_log(parent_path, f"初始准确率: {model.acc * 100:.2f}%")
 
     # 创建一个临时模型来评估新参数的性能
-    temp_model = CIFAR100CNN().to(device)
+    temp_model = CIFAR100CNN(num_classes=100).to(device)
     temp_model.set_parameters(parameters)
 
     # 评估新参数的准确率
