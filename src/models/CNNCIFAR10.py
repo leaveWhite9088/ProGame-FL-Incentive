@@ -7,7 +7,7 @@ from torch.utils.data import DataLoader
 from torchvision import transforms
 
 from src.datasets.DatasetCIFAR10 import CIFAR10Dataset
-from src.utils.UtilCIFAR10 import UtilsCIFAR10
+from src.utils.UtilCIFAR10 import UtilCIFAR10
 from src.global_variable import parent_path
 
 
@@ -71,7 +71,7 @@ class CIFAR10CNN(nn.Module):
 
         for epoch in range(num_epochs):
             running_loss = 0.0
-            UtilsCIFAR10.print_and_log(parent_path, f"Epoch {epoch + 1}/{num_epochs} started...")  # 打印每个epoch的开始
+            UtilCIFAR10.print_and_log(parent_path, f"Epoch {epoch + 1}/{num_epochs} started...")  # 打印每个epoch的开始
 
             for batch_idx, (inputs, labels) in enumerate(train_loader):
                 inputs, labels = inputs.to(device), labels.to(device)
@@ -90,10 +90,10 @@ class CIFAR10CNN(nn.Module):
 
                 # 每 100 个 batch 输出一次损失
                 if batch_idx % 100 == 0:
-                    UtilsCIFAR10.print_and_log(parent_path, f"Epoch [{epoch + 1}/{num_epochs}], Batch [{batch_idx + 1}/{len(train_loader)}], Loss: {loss.item():.4f}")
+                    UtilCIFAR10.print_and_log(parent_path, f"Epoch [{epoch + 1}/{num_epochs}], Batch [{batch_idx + 1}/{len(train_loader)}], Loss: {loss.item():.4f}")
 
             # 每个 epoch 结束时输出平均损失
-            UtilsCIFAR10.print_and_log(parent_path, f"Epoch {epoch + 1} completed. Average Loss: {running_loss / len(train_loader):.4f}")
+            UtilCIFAR10.print_and_log(parent_path, f"Epoch {epoch + 1} completed. Average Loss: {running_loss / len(train_loader):.4f}")
 
         if model_save_path is not None:
             # 保存最终模型
@@ -121,7 +121,7 @@ class CIFAR10CNN(nn.Module):
                 correct += (predicted == labels).sum().item()
 
         accuracy = correct / total
-        UtilsCIFAR10.print_and_log(parent_path, f"Accuracy: {accuracy * 100:.2f}%")
+        UtilCIFAR10.print_and_log(parent_path, f"Accuracy: {accuracy * 100:.2f}%")
         return accuracy
 
     def save_model(self, file_path):
@@ -130,7 +130,7 @@ class CIFAR10CNN(nn.Module):
         :param file_path: 保存模型的文件路径
         """
         torch.save(self.state_dict(), file_path)
-        UtilsCIFAR10.print_and_log(parent_path, f"Model saved to {file_path}")
+        UtilCIFAR10.print_and_log(parent_path, f"Model saved to {file_path}")
 
     def load_model(self, file_path):
         """
@@ -139,7 +139,7 @@ class CIFAR10CNN(nn.Module):
         """
         self.load_state_dict(torch.load(file_path))
         self.eval()
-        UtilsCIFAR10.print_and_log(parent_path, f"Model loaded from {file_path}")
+        UtilCIFAR10.print_and_log(parent_path, f"Model loaded from {file_path}")
 
     def get_parameters(self):
         """
@@ -154,7 +154,7 @@ class CIFAR10CNN(nn.Module):
         :param parameters: 模型参数字典
         """
         self.load_state_dict(parameters)
-        UtilsCIFAR10.print_and_log(parent_path, "模型参数已成功应用")
+        UtilCIFAR10.print_and_log(parent_path, "模型参数已成功应用")
 
 
 # 使用CIFAR10数据集，训练cnn
@@ -242,7 +242,7 @@ def fine_tune_cifar10_cnn(parameters, train_loader, num_epochs=5, device='cpu', 
             # 累加损失
             running_loss += loss.item()
 
-        UtilsCIFAR10.print_and_log(parent_path, f"Epoch {epoch + 1}/{num_epochs}, Loss: {running_loss / len(train_loader):.4f}")
+        UtilCIFAR10.print_and_log(parent_path, f"Epoch {epoch + 1}/{num_epochs}, Loss: {running_loss / len(train_loader):.4f}")
 
     # 直接返回训练后的模型参数
     return model.get_parameters()
@@ -280,7 +280,7 @@ def average_models_parameters(models_parameters_list):
     for key in avg_params.keys():
         avg_params[key] = avg_params[key] / num_models
 
-    UtilsCIFAR10.print_and_log(parent_path, f"已成功对{num_models}个模型的参数进行平均")
+    UtilCIFAR10.print_and_log(parent_path, f"已成功对{num_models}个模型的参数进行平均")
 
     return avg_params
 
@@ -300,17 +300,17 @@ def update_model_with_parameters(model, parameters, test_loader, device='cpu', f
     :return: 更新后的准确率
     """
     if force_update:
-        UtilsCIFAR10.print_and_log(parent_path, "强制更新")
+        UtilCIFAR10.print_and_log(parent_path, "强制更新")
 
         # 创建一个临时模型来评估新参数的性能
         temp_model = CIFAR10CNN().to(device)
         temp_model.set_parameters(parameters)
 
         # 评估新参数的准确率
-        UtilsCIFAR10.print_and_log(parent_path, "评估平均参数的准确率")
+        UtilCIFAR10.print_and_log(parent_path, "评估平均参数的准确率")
         new_accuracy = temp_model.evaluate(test_loader, device)
 
-        UtilsCIFAR10.print_and_log(parent_path,
+        UtilCIFAR10.print_and_log(parent_path,
             f"新准确率 ({new_accuracy * 100:.2f}%) 优于当前准确率 ({model.acc * 100:.2f}%)，更新模型")
 
         # 更新模型参数
@@ -320,28 +320,28 @@ def update_model_with_parameters(model, parameters, test_loader, device='cpu', f
         # 如果提供了保存路径，则保存模型
         if model_save_path:
             model.save_model(model_save_path)
-            UtilsCIFAR10.print_and_log(parent_path, f"更新后的模型已保存至: {model_save_path}")
+            UtilCIFAR10.print_and_log(parent_path, f"更新后的模型已保存至: {model_save_path}")
 
         return new_accuracy
 
     # 如果模型未初始化准确率，先评估获取基准准确率
     if not model.isInit:
-        UtilsCIFAR10.print_and_log(parent_path, "评估获取基准准确率")
+        UtilCIFAR10.print_and_log(parent_path, "评估获取基准准确率")
         model.acc = model.evaluate(test_loader, device)
         model.isInit = True
-        UtilsCIFAR10.print_and_log(parent_path, f"初始准确率: {model.acc * 100:.2f}%")
+        UtilCIFAR10.print_and_log(parent_path, f"初始准确率: {model.acc * 100:.2f}%")
 
     # 创建一个临时模型来评估新参数的性能
     temp_model = CIFAR10CNN().to(device)
     temp_model.set_parameters(parameters)
 
     # 评估新参数的准确率
-    UtilsCIFAR10.print_and_log(parent_path, "评估平均参数的准确率")
+    UtilCIFAR10.print_and_log(parent_path, "评估平均参数的准确率")
     new_accuracy = temp_model.evaluate(test_loader, device)
 
     # 决定是否更新模型参数
     if new_accuracy > model.acc:
-        UtilsCIFAR10.print_and_log(parent_path, f"新准确率 ({new_accuracy * 100:.2f}%) 优于当前准确率 ({model.acc * 100:.2f}%)，更新模型")
+        UtilCIFAR10.print_and_log(parent_path, f"新准确率 ({new_accuracy * 100:.2f}%) 优于当前准确率 ({model.acc * 100:.2f}%)，更新模型")
 
         # 更新模型参数
         model.set_parameters(parameters)
@@ -350,9 +350,9 @@ def update_model_with_parameters(model, parameters, test_loader, device='cpu', f
         # 如果提供了保存路径，则保存模型
         if model_save_path:
             model.save_model(model_save_path)
-            UtilsCIFAR10.print_and_log(parent_path, f"更新后的模型已保存至: {model_save_path}")
+            UtilCIFAR10.print_and_log(parent_path, f"更新后的模型已保存至: {model_save_path}")
     else:
-        UtilsCIFAR10.print_and_log(parent_path,
+        UtilCIFAR10.print_and_log(parent_path,
             f"新准确率 ({new_accuracy * 100:.2f}%) 不优于当前准确率 ({model.acc * 100:.2f}%)，保持原模型")
 
     return new_accuracy
@@ -382,7 +382,7 @@ def evaluate_data_for_dynamic_adjustment(train_loader, test_loader, num_epochs=5
     model.to(device)
 
     # 评估模型
-    UtilsCIFAR10.print_and_log(parent_path, "原模型评估：")
+    UtilCIFAR10.print_and_log(parent_path, "原模型评估：")
     model.evaluate(test_loader, device=str(device))
 
     # 定义损失函数和优化器
@@ -413,7 +413,7 @@ def evaluate_data_for_dynamic_adjustment(train_loader, test_loader, num_epochs=5
             # 累加损失
             running_loss += loss.item()
 
-        UtilsCIFAR10.print_and_log(parent_path, f"Epoch {epoch + 1}/{num_epochs}, Loss: {running_loss / len(train_loader):.4f}")
+        UtilCIFAR10.print_and_log(parent_path, f"Epoch {epoch + 1}/{num_epochs}, Loss: {running_loss / len(train_loader):.4f}")
 
         # 记录loss，用于计算loss差
         if epoch == 0:
@@ -422,12 +422,12 @@ def evaluate_data_for_dynamic_adjustment(train_loader, test_loader, num_epochs=5
         if epoch == num_epochs - 1:
             last_epoch_loss = running_loss / len(train_loader)
 
-    UtilsCIFAR10.print_and_log(parent_path, "新模型评估：")
+    UtilCIFAR10.print_and_log(parent_path, "新模型评估：")
     model.evaluate(test_loader, device=str(device))
-    UtilsCIFAR10.print_and_log(parent_path, "loss差为：")
-    UtilsCIFAR10.print_and_log(parent_path, first_epoch_loss - last_epoch_loss)
-    UtilsCIFAR10.print_and_log(parent_path, "单位数据loss差为：")
+    UtilCIFAR10.print_and_log(parent_path, "loss差为：")
+    UtilCIFAR10.print_and_log(parent_path, first_epoch_loss - last_epoch_loss)
+    UtilCIFAR10.print_and_log(parent_path, "单位数据loss差为：")
     unitDataLossDiff = (first_epoch_loss - last_epoch_loss) / len(train_loader.dataset)
-    UtilsCIFAR10.print_and_log(parent_path, unitDataLossDiff)
+    UtilCIFAR10.print_and_log(parent_path, unitDataLossDiff)
 
     return unitDataLossDiff
