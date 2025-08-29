@@ -71,9 +71,46 @@ python -m src.experiments.verify_selection.two_way_selection.verify_selection-tw
 ```
 
 对比实验
+MNIST
 ```shell
-# 对比效用
-python -m src.experiments.baseline_comparison.baseline_utility --adjustment_literation -1 --parent_path log-verify_selection-utility --util MNIST
-# 对比精度
-python -m src.experiments.baseline_comparison.baseline_accuracy --adjustment_literation 100 --parent_path log-verify_selection-utility --util MNIST
+# 基线效用
+python -m src.experiments.baseline_comparison.Utility.baseline_utility-MNIST --adjustment_literation -1 --parent_path log-verify_selection-utility --util MNIST
+# PGI-RDFL 效用
+python -m src.experiments.baseline_comparison.Utility.pgi_rdfl-utility-MNIST --adjustment_literation -1 --parent_path log-verify_selection-utility --util MNIST
+# fixed 效用
+python -m src.experiments.baseline_comparison.Utility.fixed-utility-MNIST --adjustment_literation -1 --parent_path log-verify_selection-utility --util MNIST
+# random 效用
+python -m src.experiments.baseline_comparison.Utility.random-utility-MNIST --adjustment_literation -1 --parent_path log-verify_selection-utility --util MNIST
+
+# 基线精度
+python -m src.experiments.baseline_comparison.Accuracy.baseline_accuracy-MNIST --adjustment_literation 100 --parent_path log-verify_selection-utility --util MNIST
+# PGI-RDFL 精度
+python -m src.experiments.baseline_comparison.Accuracy.pgi_rdfl-MNIST --adjustment_literation 100 --parent_path log-verify_selection-utility --util MNIST
+# fair_flearn-master 精度
+
+# FL-Client-Sampling-main 精度
+
+# Oort-master 精度
+```
+
+CIFRA10
+```shell
+# 基线效用
+python -m src.experiments.baseline_comparison.Utility.baseline_utility-CIFAR10 --adjustment_literation -1 --parent_path log-verify_selection-utility --util MNIST
+# PGI-RDFL 效用
+python -m src.experiments.baseline_comparison.Utility.pgi_rdfl-utility-CIFAR10 --adjustment_literation -1 --parent_path log-verify_selection-utility --util MNIST
+# fixed 效用
+python -m src.experiments.baseline_comparison.Utility.fixed-utility-CIFAR10 --adjustment_literation -1 --parent_path log-verify_selection-utility --util MNIST
+# random 效用
+python -m src.experiments.baseline_comparison.Utility.random-utility-CIFAR10 --adjustment_literation -1 --parent_path log-verify_selection-utility --util MNIST
+
+# 基线精度
+python -m src.experiments.baseline_comparison.Accuracy.baseline_accuracy-CIFAR10 --adjustment_literation 100 --parent_path log-verify_selection-utility --util MNIST
+# PGI-RDFL 精度
+python -m src.experiments.baseline_comparison.Accuracy.pgi_rdfl-CIFAR10 --adjustment_literation 100 --parent_path log-verify_selection-utility --util MNIST
+# fair_flearn-master 精度
+
+# FL-Client-Sampling-main 精度
+
+# Oort-master 精度
 ```

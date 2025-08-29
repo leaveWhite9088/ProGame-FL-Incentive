@@ -1,14 +1,14 @@
 """
-基线两方Stackelberg-Cournot模型 - 精度实验
-Baseline Two-Party Stackelberg-Cournot Model - Accuracy Experiment
+基线两方Stackelberg-Cournot模型 - 效用实验
+Baseline Two-Party Stackelberg-Cournot Model - Utility Experiment
 
-本实验实现了基于智能电网论文思想的简化模型，用于与PGI-RDFL进行模型精度对比：
+本实验实现了基于智能电网论文思想的简化模型，用于与PGI-RDFL进行效用对比：
 - 模型拥有者（领导者）只决定总支付η，不决定选择概率p
 - 所有数据拥有者都参与（p固定为全1）
 - 数据拥有者通过古诺博弈竞争数据贡献量
 - 计算中心作为被动工具，不参与博弈决策
 
-输出：accuracy_list（模型精度列表）
+输出：U_Eta_list（模型拥有者效用）和U_qn_list（数据拥有者平均效用）
 """
 
 import numpy as np
@@ -455,18 +455,16 @@ def fine_tune_model(cpcs, matching, test_loader, lr=1e-5, device='cpu', num_epoc
 
 
 if __name__ == "__main__":
-    UtilMNIST.print_and_log(f"**** Baseline Two-Party Stackelberg-Cournot - Accuracy Experiment ****")
-    UtilMNIST.print_and_log(f"**** 基线两方斯塔克尔伯格-古诺模型 - 精度实验 ****")
+    UtilMNIST.print_and_log(f"**** Baseline Two-Party Stackelberg-Cournot - Utility Experiment ****")
+    UtilMNIST.print_and_log(f"**** 基线两方斯塔克尔伯格-古诺模型 - 效用实验 ****")
     UtilMNIST.print_and_log(f"**** 运行时间： {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} ****")
     
-    # 记录每轮的精度
-    accuracy_list_total = []
-    
-    # 设置实验参数
-    num_iterations = 10  # 联邦学习迭代轮数
+    # 记录第 adjustment_literation+1 轮的效用值
+    U_Eta_list = []  # 模型拥有者效用
+    U_qn_list = []   # 数据拥有者平均效用
     
     # 客户端数量设置
-    for n in [9]:  # 10个客户端
+    for n in [9, 19, 29, 39, 49, 59, 69, 79, 89, 99]:
         UtilMNIST.print_and_log(f"========================= 客户端数量: {n + 1} =========================")
         
         # 定义参数
@@ -485,11 +483,9 @@ if __name__ == "__main__":
         adjustment_lit = adjustment_literation
         avg_f_list = []
         last_xn_list = [0] * N
-        accuracy_list = []  # 当前客户端数量的精度列表
         matching = None  # 初始化matching变量
         
-        # 运行指定轮数的联邦学习
-        while literation < num_iterations:
+        while True:
             UtilMNIST.print_and_log(f"========================= literation: {literation + 1} =========================")
             
             # 第一轮：添加噪声和评估数据质量
@@ -510,7 +506,19 @@ if __name__ == "__main__":
                 avg_f_list, last_xn_list, N, Rho_val, Lambda_val
             )
             last_xn_list = xn_list
+            
+            # 记录调整后的效用
+            if literation == adjustment_lit + 1:
+                U_Eta_list.append(U_Eta)
+                U_qn_list.append(U_qn)
+                UtilMNIST.print_and_log(f"[记录效用] U_Eta: {U_Eta:.4f}, U_qn: {U_qn:.4f}")
+            
             UtilMNIST.print_and_log("DONE")
+            
+            # 提前中止（只关注效用值）
+            if literation > adjustment_lit:
+                UtilMNIST.print_and_log(f"完成效用实验，准备输出结果...")
+                break
             
             # 分配支付
             UtilMNIST.print_and_log(f"----- literation {literation + 1}: DataOwner 分配 ModelOwner 的支付 -----")
@@ -528,39 +536,27 @@ if __name__ == "__main__":
             submit_data_to_cpc(matching, dataowners, ComputingCenters, xn_list, pn_list)
             UtilMNIST.print_and_log("DONE")
             
-            # 模型训练并记录精度
+            # 模型训练（为了更新数据质量）
             UtilMNIST.print_and_log(f"----- literation {literation + 1}: 模型训练 -----")
-            avg_f_list, new_accuracy = train_model_with_cpc(
+            avg_f_list, _ = train_model_with_cpc(
                 matching, ComputingCenters, test_images, test_labels,
                 literation, avg_f_list, adjustment_lit, force_update=True, N=N
             )
-            
-            # 记录精度
-            accuracy_list.append(new_accuracy)
-            UtilMNIST.print_and_log(f"[记录精度] 第{literation + 1}轮精度: {new_accuracy:.4f}")
-            UtilMNIST.print_and_log(f"accuracy_list: {accuracy_list}")
             UtilMNIST.print_and_log("DONE")
             
             literation += 1
-        
-        # 保存当前客户端数量的精度列表
-        accuracy_list_total = accuracy_list.copy()
     
     # 输出最终结果
-    UtilMNIST.print_and_log("\n===== 基线精度实验最终结果 =====")
-    UtilMNIST.print_and_log(f"各轮精度 accuracy_list_total: {accuracy_list_total}")
-    UtilMNIST.print_and_log(f"最终精度: {accuracy_list_total[-1]:.4f}")
-    UtilMNIST.print_and_log(f"平均精度: {np.mean(accuracy_list_total):.4f}")
-    UtilMNIST.print_and_log(f"精度提升: {(accuracy_list_total[-1] - accuracy_list_total[0]):.4f}")
+    UtilMNIST.print_and_log("\n===== 基线效用实验最终结果 =====")
+    UtilMNIST.print_and_log(f"模型拥有者效用 U_Eta_list: {U_Eta_list}")
+    UtilMNIST.print_and_log(f"数据拥有者平均效用 U_qn_list: {U_qn_list}")
     
     # 保存结果到文件
     result_path = os.path.join(get_project_root(), "data/log/baseline_comparison/")
     os.makedirs(result_path, exist_ok=True)
     
-    with open(os.path.join(result_path, "baseline_accuracy_results.txt"), "w") as f:
-        f.write(f"Baseline Two-Party Stackelberg-Cournot - Accuracy Results\n")
+    with open(os.path.join(result_path, "baseline_utility_results.txt"), "w") as f:
+        f.write(f"Baseline Two-Party Stackelberg-Cournot - Utility Results\n")
         f.write(f"运行时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
-        f.write(f"accuracy_list_total: {accuracy_list_total}\n")
-        f.write(f"最终精度: {accuracy_list_total[-1]:.4f}\n")
-        f.write(f"平均精度: {np.mean(accuracy_list_total):.4f}\n")
-        f.write(f"精度提升: {(accuracy_list_total[-1] - accuracy_list_total[0]):.4f}\n")
+        f.write(f"U_Eta_list: {U_Eta_list}\n")
+        f.write(f"U_qn_list: {U_qn_list}\n")
