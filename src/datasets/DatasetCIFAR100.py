@@ -5,15 +5,29 @@ import pickle
 import os
 
 class CIFAR100Dataset(Dataset):
-    def __init__(self, batch_files, transform=None):
+    def __init__(self, batch_files=None, images_path=None, labels_path=None, transform=None):
         """
         初始化CIFAR-100数据集
+        
+        支持两种初始化方式：
+        1. 从批处理文件加载（CIFAR原始格式）
+        2. 从图像和标签路径加载（类似MNIST格式，如果实现的话）
 
         :param batch_files: 包含所有批处理文件路径的列表（例如 ['train', 'test']）
+        :param images_path: 图像文件路径（如果使用自定义格式）
+        :param labels_path: 标签文件路径（如果使用自定义格式）
         :param transform: 可选的图像转换（如数据增强、归一化等）
         """
         self.transform = transform
-        self.data, self.labels = self._load_batches(batch_files)
+        
+        if batch_files is not None:
+            # 从CIFAR原始批处理文件加载
+            self.data, self.labels = self._load_batches(batch_files)
+        elif images_path is not None and labels_path is not None:
+            # 从图像和标签路径加载（如果需要实现这种格式）
+            self.data, self.labels = self._load_images_and_labels(images_path, labels_path)
+        else:
+            raise ValueError("必须提供batch_files或images_path和labels_path")
 
     def _load_batches(self, batch_files):
         """
@@ -29,6 +43,9 @@ class CIFAR100Dataset(Dataset):
                 raise FileNotFoundError(f"Batch file {batch_file} not found.")
             with open(batch_file, 'rb') as f:
                 batch = pickle.load(f, encoding='bytes')
+                # 验证文件格式
+                if b'data' not in batch or b'fine_labels' not in batch:
+                    raise ValueError(f"Invalid CIFAR100 batch file format in {batch_file}")
                 data = batch[b'data']  # shape: (num_samples, 3072)
                 labels = batch[b'fine_labels']  # CIFAR-100 使用 'fine_labels'
                 all_data.append(data)
@@ -36,6 +53,18 @@ class CIFAR100Dataset(Dataset):
         all_data = np.vstack(all_data).reshape(-1, 3, 32, 32).astype(np.float32) / 255.0  # 归一化到 [0, 1]
         all_labels = np.array(all_labels, dtype=np.int64)
         return all_data, all_labels
+
+    def _load_images_and_labels(self, images_path, labels_path):
+        """
+        从图像和标签文件加载数据（可选实现，类似MNIST格式）
+        
+        :param images_path: 图像文件路径
+        :param labels_path: 标签文件路径
+        :return: (data, labels) 两个numpy数组
+        """
+        # 注意：CIFAR100标准格式是批处理文件，此方法为可选实现
+        # 如果需要实现此功能，可以参考MNIST的实现方式
+        raise NotImplementedError("从图像和标签文件加载CIFAR100数据的功能尚未实现")
 
     def __len__(self):
         """
@@ -54,8 +83,8 @@ class CIFAR100Dataset(Dataset):
         label = self.labels[idx]
 
         if self.transform:
-            # 将 numpy array 转换为 PIL Image 以应用 torchvision.transforms
-            image = torch.tensor(image).permute(1, 2, 0)  # 转换为 (H, W, C)
+            # 如果transform需要PIL Image，需要转换
+            # image = transforms.ToPILImage()(torch.tensor(image))
             image = self.transform(image)
         else:
             image = torch.tensor(image)
