@@ -8,7 +8,7 @@ import pickle
 
 from src.global_variable import parent_path
 
-class UtilsCIFAR10:
+class UtilCIFAR10:
     @staticmethod
     def split_data_to_dataowners(dataowners, X_data, y_data):
         """

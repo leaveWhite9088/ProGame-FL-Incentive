@@ -151,35 +151,35 @@ python -m src.experiments.baseline_comparison.Accuracy.pgi_rdfl-accuracy-MNIST -
 #### CIFAR-10 Dataset
 ```shell
 # Baseline utility
-python -m src.experiments.baseline_comparison.Utility.baseline_utility-CIFAR10 --adjustment_literation -1 --parent_path log-verify_selection-utility --util MNIST
+python -m src.experiments.baseline_comparison.Utility.baseline_utility-CIFAR10 --adjustment_literation -1 --parent_path log-verify_selection-utility --util CIFAR10
 # PGI-RDFL utility
-python -m src.experiments.baseline_comparison.Utility.pgi_rdfl-utility-CIFAR10 --adjustment_literation -1 --parent_path log-verify_selection-utility --util MNIST
+python -m src.experiments.baseline_comparison.Utility.pgi_rdfl-utility-CIFAR10 --adjustment_literation -1 --parent_path log-verify_selection-utility --util CIFAR10
 # Fixed utility
-python -m src.experiments.baseline_comparison.Utility.fixed-utility-CIFAR10 --adjustment_literation -1 --parent_path log-verify_selection-utility --util MNIST
+python -m src.experiments.baseline_comparison.Utility.fixed-utility-CIFAR10 --adjustment_literation -1 --parent_path log-verify_selection-utility --util CIFAR10
 # Random utility
-python -m src.experiments.baseline_comparison.Utility.random-utility-CIFAR10 --adjustment_literation -1 --parent_path log-verify_selection-utility --util MNIST
+python -m src.experiments.baseline_comparison.Utility.random-utility-CIFAR10 --adjustment_literation -1 --parent_path log-verify_selection-utility --util CIFAR10
 
 # Baseline accuracy
-python -m src.experiments.baseline_comparison.Accuracy.baseline_accuracy-CIFAR10 --adjustment_literation 100 --parent_path log-verify_selection-utility --util MNIST
+python -m src.experiments.baseline_comparison.Accuracy.baseline_accuracy-CIFAR10 --adjustment_literation 100 --parent_path log-verify_selection-utility --util CIFAR10
 # PGI-RDFL accuracy
-python -m src.experiments.baseline_comparison.Accuracy.pgi_rdfl-accuracy-CIFAR10 --adjustment_literation 100 --parent_path log-verify_selection-utility --util MNIST
+python -m src.experiments.baseline_comparison.Accuracy.pgi_rdfl-accuracy-CIFAR10 --adjustment_literation 100 --parent_path log-verify_selection-utility --util CIFAR10
 ```
 
 #### CIFAR-100 Dataset
 ```shell
 # Baseline utility
-python -m src.experiments.baseline_comparison.Utility.baseline_utility-CIFAR100 --adjustment_literation -1 --parent_path log-verify_selection-utility --util MNIST
+python -m src.experiments.baseline_comparison.Utility.baseline_utility-CIFAR100 --adjustment_literation -1 --parent_path log-verify_selection-utility --util CIFAR100
 # PGI-RDFL utility
-python -m src.experiments.baseline_comparison.Utility.pgi_rdfl-utility-CIFAR100 --adjustment_literation -1 --parent_path log-verify_selection-utility --util MNIST
+python -m src.experiments.baseline_comparison.Utility.pgi_rdfl-utility-CIFAR100 --adjustment_literation -1 --parent_path log-verify_selection-utility --util CIFAR100
 # Fixed utility
-python -m src.experiments.baseline_comparison.Utility.fixed-utility-CIFAR100 --adjustment_literation -1 --parent_path log-verify_selection-utility --util MNIST
+python -m src.experiments.baseline_comparison.Utility.fixed-utility-CIFAR100 --adjustment_literation -1 --parent_path log-verify_selection-utility --util CIFAR100
 # Random utility
-python -m src.experiments.baseline_comparison.Utility.random-utility-CIFAR100 --adjustment_literation -1 --parent_path log-verify_selection-utility --util MNIST
+python -m src.experiments.baseline_comparison.Utility.random-utility-CIFAR100 --adjustment_literation -1 --parent_path log-verify_selection-utility --util CIFAR100
 
 # Baseline accuracy
-python -m src.experiments.baseline_comparison.Accuracy.baseline_accuracy-CIFAR100 --adjustment_literation 100 --parent_path log-verify_selection-utility --util MNIST
+python -m src.experiments.baseline_comparison.Accuracy.baseline_accuracy-CIFAR100 --adjustment_literation 100 --parent_path log-verify_selection-utility --util CIFAR100
 # PGI-RDFL accuracy
-python -m src.experiments.baseline_comparison.Accuracy.pgi_rdfl-accuracy-CIFAR100 --adjustment_literation 100 --parent_path log-verify_selection-utility --util MNIST
+python -m src.experiments.baseline_comparison.Accuracy.pgi_rdfl-accuracy-CIFAR100 --adjustment_literation 100 --parent_path log-verify_selection-utility --util CIFAR100
 ```
 
 ## 🚀 Usage
