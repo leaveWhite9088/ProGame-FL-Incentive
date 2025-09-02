@@ -146,6 +146,10 @@ python -m src.experiments.baseline_comparison.Utility.random-utility-MNIST --adj
 python -m src.experiments.baseline_comparison.Accuracy.baseline_accuracy-MNIST --adjustment_literation 100 --parent_path log-verify_selection-utility --util MNIST
 # PGI-RDFL accuracy
 python -m src.experiments.baseline_comparison.Accuracy.pgi_rdfl-accuracy-MNIST --adjustment_literation 100 --parent_path log-verify_selection-utility --util MNIST
+# Fiexed accuracy
+python -m src.experiments.baseline_comparison.Accuracy.fixed-accuracy-MNIST --adjustment_literation 100 --parent_path log-verify_selection-utility --util MNIST
+# Random accuracy
+
 ```
 
 #### CIFAR-10 Dataset
@@ -163,6 +167,9 @@ python -m src.experiments.baseline_comparison.Utility.random-utility-CIFAR10 --a
 python -m src.experiments.baseline_comparison.Accuracy.baseline_accuracy-CIFAR10 --adjustment_literation 100 --parent_path log-verify_selection-utility --util CIFAR10
 # PGI-RDFL accuracy
 python -m src.experiments.baseline_comparison.Accuracy.pgi_rdfl-accuracy-CIFAR10 --adjustment_literation 100 --parent_path log-verify_selection-utility --util CIFAR10
+# Fiexed accuracy
+python -m src.experiments.baseline_comparison.Accuracy.fixed-accuracy-CIFAR10 --adjustment_literation 100 --parent_path log-verify_selection-utility --util CIFAR10
+
 ```
 
 #### CIFAR-100 Dataset
@@ -180,6 +187,10 @@ python -m src.experiments.baseline_comparison.Utility.random-utility-CIFAR100 --
 python -m src.experiments.baseline_comparison.Accuracy.baseline_accuracy-CIFAR100 --adjustment_literation 100 --parent_path log-verify_selection-utility --util CIFAR100
 # PGI-RDFL accuracy
 python -m src.experiments.baseline_comparison.Accuracy.pgi_rdfl-accuracy-CIFAR100 --adjustment_literation 100 --parent_path log-verify_selection-utility --util CIFAR100
+# Fiexed accuracy
+python -m src.experiments.baseline_comparison.Accuracy.fixed-accuracy-CIFAR100 --adjustment_literation 100 --parent_path log-verify_selection-utility --util CIFAR100
+
+
 ```
 
 ## 🚀 Usage
