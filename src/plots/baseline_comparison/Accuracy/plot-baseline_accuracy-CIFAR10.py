@@ -15,12 +15,12 @@ utility_fixed =
 utility_random =
 utility_FL_Client_Sampling =
 
-# 绘制图表
-plt.plot(users, utility_baseline, 'r--o', label='Baseline')  # 红色虚线，圆形标记
-plt.plot(users, utility_pgirdfl, 'b--s', label='PGI-RDFL')  # 蓝色虚线，方形标记
-plt.plot(users, utility_fixed, 'y--o', label='Fixed')
-plt.plot(users, utility_random, 'g--^', label='Random')
-plt.plot(users, utility_FL_Client_Sampling, 'g--^', label='Client-Sampling')
+# 绘制数据线
+plt.plot(users, utility_baseline, 'r--o', markersize=5, linewidth=2, label='Baseline')
+plt.plot(users, utility_pgirdfl, 'b--s', markersize=5, linewidth=2, label='PGI-RDFL')
+plt.plot(users, utility_fixed, 'y--D', markersize=5, linewidth=2, label='Fixed')
+plt.plot(users, utility_random, 'g--^', markersize=5, linewidth=2, label='Random')
+plt.plot(users, utility_FL_Client_Sampling, 'm--*', markersize=5, linewidth=2, label='Client-Sampling')
 
 # 添加图例
 plt.legend()
