@@ -38,6 +38,51 @@ ProGame-FL-Incentive/
 └── README.md               # This file
 ```
 
+## 📊 Dataset Setup
+
+### Dataset Structure
+
+Place the downloaded datasets in the following structure:
+
+```
+data/
+└── dataset/
+    ├── CIFAR10/
+    │   ├── batches.meta
+    │   ├── data_batch_1
+    │   ├── data_batch_2
+    │   ├── data_batch_3
+    │   ├── data_batch_4
+    │   ├── data_batch_5
+    │   └── test_batch
+    ├── CIFAR100/
+    │   ├── meta
+    │   ├── test
+    │   └── train
+    └── MNIST/
+        ├── t10k-images.idx3-ubyte
+        ├── t10k-labels.idx1-ubyte
+        ├── train-images.idx3-ubyte
+        └── train-labels.idx1-ubyte
+```
+
+### Dataset Downloads
+
+#### MNIST
+
+- [Training images](https://storage.googleapis.com/cvdf-datasets/mnist/train-images-idx3-ubyte.gz)
+- [Training labels](https://storage.googleapis.com/cvdf-datasets/mnist/train-labels-idx1-ubyte.gz)
+- [Testing images](https://storage.googleapis.com/cvdf-datasets/mnist/t10k-images-idx3-ubyte.gz)
+- [Testing labels](https://storage.googleapis.com/cvdf-datasets/mnist/t10k-labels-idx1-ubyte.gz)
+
+#### CIFAR10
+
+- [CIFAR-10 Python](https://www.cs.toronto.edu/~kriz/cifar-10-python.tar.gz)
+
+#### CIFAR100
+
+- [CIFAR-100 Python](https://www.cs.toronto.edu/~kriz/cifar-100-python.tar.gz)
+
 ## ⚙️ Installation
 
 ### Prerequisites
