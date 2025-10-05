@@ -19,20 +19,25 @@ class CIFAR10CNN(nn.Module):
         """
         super(CIFAR10CNN, self).__init__()
 
+        # === MODIFIED SECTION START ===
+        # 更新网络结构以匹配新的 CIFAR10CNN.py 文件
+
         # 定义卷积层
-        self.conv1 = nn.Conv2d(in_channels=3, out_channels=32, kernel_size=3, stride=1, padding=1)
-        self.conv2 = nn.Conv2d(32, 64, kernel_size=3, stride=1, padding=1)
-        self.conv3 = nn.Conv2d(64, 128, kernel_size=3, stride=1, padding=1)
-        self.conv4 = nn.Conv2d(128, 128, kernel_size=3, stride=1, padding=1)
+        self.conv1 = nn.Conv2d(in_channels=3, out_channels=64, kernel_size=3, stride=1, padding=1)
+        self.conv2 = nn.Conv2d(64, 128, kernel_size=3, stride=1, padding=1)
+        self.conv3 = nn.Conv2d(128, 256, kernel_size=3, stride=1, padding=1)
+
+        # 定义池化层
         self.pool = nn.MaxPool2d(kernel_size=2, stride=2, padding=0)
-        self.dropout = nn.Dropout(0.25)
+        self.pool2 = nn.MaxPool2d(kernel_size=2, stride=2, padding=0)
 
         # 定义全连接层
-        self.fc1 = nn.Linear(128 * 8 * 8, 512)  # 输入特征是 8x8x128
-        self.fc2 = nn.Linear(512, num_classes)  # 输出类别数量
-        self.dropout_fc = nn.Dropout(0.5)
+        self.fc1 = nn.Linear(256 * 8 * 8, 512)
+        self.fc2 = nn.Linear(512, num_classes)
 
-        # 记录模型的准确率，提高效率
+        # === MODIFIED SECTION END ===
+
+        # 保留原有的属性，以兼容文件中的其他函数
         self.acc = 0
         self.isInit = False
 
@@ -42,19 +47,22 @@ class CIFAR10CNN(nn.Module):
         :param x: 输入数据
         :return: 模型输出
         """
-        x = F.relu(self.conv1(x))  # 第一层卷积 + ReLU
-        x = self.pool(F.relu(self.conv2(x)))  # 第二层卷积 + ReLU + 池化
-        x = self.dropout(x)
-        
-        x = F.relu(self.conv3(x))  # 第三层卷积 + ReLU
-        x = self.pool(F.relu(self.conv4(x)))  # 第四层卷积 + ReLU + 池化
-        x = self.dropout(x)
+        # === MODIFIED SECTION START ===
+        # 更新前向传播逻辑以匹配新的网络结构
 
-        x = x.view(-1, 128 * 8 * 8)  # 展平，CIFAR10经过两次池化后是8x8
-        x = F.relu(self.fc1(x))  # 全连接层1 + ReLU
-        x = self.dropout_fc(x)
-        x = self.fc2(x)  # 全连接层2（输出层）
+        x = F.relu(self.conv1(x))
+        x = F.relu(self.conv2(x))
+        x = self.pool(x)
+
+        x = F.relu(self.conv3(x))
+        x = self.pool2(x)
+
+        x = x.view(-1, 256 * 8 * 8)  # 展平以匹配最后一个卷积层的输出
+        x = F.relu(self.fc1(x))
+        x = self.fc2(x)
         return x
+
+        # === MODIFIED SECTION END ===
 
     def train_model(self, train_loader, criterion, optimizer, num_epochs=5, device='cpu', model_save_path=None):
         """
@@ -90,10 +98,12 @@ class CIFAR10CNN(nn.Module):
 
                 # 每 100 个 batch 输出一次损失
                 if batch_idx % 100 == 0:
-                    UtilCIFAR10.print_and_log(parent_path, f"Epoch [{epoch + 1}/{num_epochs}], Batch [{batch_idx + 1}/{len(train_loader)}], Loss: {loss.item():.4f}")
+                    UtilCIFAR10.print_and_log(parent_path,
+                                              f"Epoch [{epoch + 1}/{num_epochs}], Batch [{batch_idx + 1}/{len(train_loader)}], Loss: {loss.item():.4f}")
 
             # 每个 epoch 结束时输出平均损失
-            UtilCIFAR10.print_and_log(parent_path, f"Epoch {epoch + 1} completed. Average Loss: {running_loss / len(train_loader):.4f}")
+            UtilCIFAR10.print_and_log(parent_path,
+                                      f"Epoch {epoch + 1} completed. Average Loss: {running_loss / len(train_loader):.4f}")
 
         if model_save_path is not None:
             # 保存最终模型
@@ -242,7 +252,8 @@ def fine_tune_cifar10_cnn(parameters, train_loader, num_epochs=5, device='cpu', 
             # 累加损失
             running_loss += loss.item()
 
-        UtilCIFAR10.print_and_log(parent_path, f"Epoch {epoch + 1}/{num_epochs}, Loss: {running_loss / len(train_loader):.4f}")
+        UtilCIFAR10.print_and_log(parent_path,
+                                  f"Epoch {epoch + 1}/{num_epochs}, Loss: {running_loss / len(train_loader):.4f}")
 
     # 直接返回训练后的模型参数
     return model.get_parameters()
@@ -252,7 +263,7 @@ def fine_tune_cifar10_cnn(parameters, train_loader, num_epochs=5, device='cpu', 
 def average_models_parameters(models_parameters_list):
     """
     计算多个模型参数的平均值，用于联邦学习（FedAvg算法）
-    
+
     :param models_parameters_list: 包含多个模型参数字典的列表
     :return: 平均后的模型参数字典
     """
@@ -290,14 +301,14 @@ def update_model_with_parameters(model, parameters, test_loader, device='cpu', f
                                  model_save_path="../data/model/cifar10_cnn"):
     """
     评估参数在模型上的表现，如果准确率提高或强制更新则应用这些参数
-    
+
     :param model: 要更新的CIFAR10CNN模型
     :param parameters: 新的模型参数字典(平均参数)
     :param test_loader: 测试数据加载器
     :param device: 计算设备 ('cpu' 或 'cuda')
     :param force_update: 是否强制覆盖模型参数，默认为False
     :param model_save_path: 模型保存路径，如果为None则不保存
-    :return: 更新后的准确率
+    :return: 更新后模型的官方准确率 (The official accuracy of the model after the update)
     """
     if force_update:
         UtilCIFAR10.print_and_log(parent_path, "强制更新")
@@ -311,7 +322,7 @@ def update_model_with_parameters(model, parameters, test_loader, device='cpu', f
         new_accuracy = temp_model.evaluate(test_loader, device)
 
         UtilCIFAR10.print_and_log(parent_path,
-            f"新准确率 ({new_accuracy * 100:.2f}%) 优于当前准确率 ({model.acc * 100:.2f}%)，更新模型")
+                                  f"新准确率 ({new_accuracy * 100:.2f}%) 优于当前准确率 ({model.acc * 100:.2f}%)，更新模型")
 
         # 更新模型参数
         model.set_parameters(parameters)
@@ -322,7 +333,8 @@ def update_model_with_parameters(model, parameters, test_loader, device='cpu', f
             model.save_model(model_save_path)
             UtilCIFAR10.print_and_log(parent_path, f"更新后的模型已保存至: {model_save_path}")
 
-        return new_accuracy
+        # 【修改点】: 无论如何，返回模型对象中当前存储的 acc 值
+        return model.acc
 
     # 如果模型未初始化准确率，先评估获取基准准确率
     if not model.isInit:
@@ -341,7 +353,8 @@ def update_model_with_parameters(model, parameters, test_loader, device='cpu', f
 
     # 决定是否更新模型参数
     if new_accuracy > model.acc:
-        UtilCIFAR10.print_and_log(parent_path, f"新准确率 ({new_accuracy * 100:.2f}%) 优于当前准确率 ({model.acc * 100:.2f}%)，更新模型")
+        UtilCIFAR10.print_and_log(parent_path,
+                                  f"新准确率 ({new_accuracy * 100:.2f}%) 优于当前准确率 ({model.acc * 100:.2f}%)，更新模型")
 
         # 更新模型参数
         model.set_parameters(parameters)
@@ -353,10 +366,9 @@ def update_model_with_parameters(model, parameters, test_loader, device='cpu', f
             UtilCIFAR10.print_and_log(parent_path, f"更新后的模型已保存至: {model_save_path}")
     else:
         UtilCIFAR10.print_and_log(parent_path,
-            f"新准确率 ({new_accuracy * 100:.2f}%) 不优于当前准确率 ({model.acc * 100:.2f}%)，保持原模型")
-
-    return new_accuracy
-
+                                  f"新准确率 ({new_accuracy * 100:.2f}%) 不优于当前准确率 ({model.acc * 100:.2f}%)，保持原模型")
+    # 这确保了返回值始终是您想要的“最终精度”。
+    return model.acc
 
 # 动态调整轮次的评价函数
 def evaluate_data_for_dynamic_adjustment(train_loader, test_loader, num_epochs=5, device='cpu', lr=1e-5,
@@ -413,7 +425,8 @@ def evaluate_data_for_dynamic_adjustment(train_loader, test_loader, num_epochs=5
             # 累加损失
             running_loss += loss.item()
 
-        UtilCIFAR10.print_and_log(parent_path, f"Epoch {epoch + 1}/{num_epochs}, Loss: {running_loss / len(train_loader):.4f}")
+        UtilCIFAR10.print_and_log(parent_path,
+                                  f"Epoch {epoch + 1}/{num_epochs}, Loss: {running_loss / len(train_loader):.4f}")
 
         # 记录loss，用于计算loss差
         if epoch == 0:

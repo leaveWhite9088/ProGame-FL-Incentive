@@ -9,18 +9,22 @@ matplotlib.rcParams['font.size'] = 16  # 同时设置字体大小
 # 定义轮次
 users = range(100)
 
-utility_baseline =
+# utility_baseline =
 utility_pgirdfl =
-utility_fixed =
-utility_random =
-utility_FL_Client_Sampling =
+# utility_fixed =
+# utility_random =
+# utility_FL_Client_Sampling =
+
+utility_pgirdfl2 =
 
 # 绘制数据线
-plt.plot(users, utility_baseline, 'r--o', markersize=5, linewidth=2, label='Baseline')
+# plt.plot(users, utility_baseline, 'r--o', markersize=5, linewidth=2, label='Baseline')
 plt.plot(users, utility_pgirdfl, 'b--s', markersize=5, linewidth=2, label='PGI-RDFL')
-plt.plot(users, utility_fixed, 'y--D', markersize=5, linewidth=2, label='Fixed')
-plt.plot(users, utility_random, 'g--^', markersize=5, linewidth=2, label='Random')
-plt.plot(users, utility_FL_Client_Sampling, 'm--*', markersize=5, linewidth=2, label='Client-Sampling')
+# plt.plot(users, utility_fixed, 'y--D', markersize=5, linewidth=2, label='Fixed')
+# plt.plot(users, utility_random, 'g--^', markersize=5, linewidth=2, label='Random')
+# plt.plot(users, utility_FL_Client_Sampling, 'm--*', markersize=5, linewidth=2, label='Client-Sampling')
+
+plt.plot(users, utility_pgirdfl2, 'g', markersize=5, linewidth=2, label='PGI-RDFL(without force update)')
 
 # 添加图例
 plt.legend()

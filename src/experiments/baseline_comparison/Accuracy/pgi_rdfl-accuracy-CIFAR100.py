@@ -462,7 +462,7 @@ if __name__ == "__main__":
             UtilCIFAR100.print_and_log(parent_path, f"----- literation {literation + 1}: 模型训练 -----")
             avg_f_list, new_accuracy = train_model_with_cpc(matching, ComputingCenters, test_images, test_labels,
                                                             literation, avg_f_list, adjustment_lit,
-                                                            force_update=True, N=N)
+                                                            force_update=False, N=N)
             # 构建精准度列表
             accuracy_list.append(new_accuracy)
             UtilCIFAR100.print_and_log(parent_path, f"accuracy_list: {accuracy_list}")
