@@ -71,7 +71,7 @@ class JointOptimization:
             p_vector = self._optimize_p_given_eta(eta, p_prev)
             
             # Step 5: 给定 P^(h-1), 更新 η^h
-            eta = self._optimize_eta_given_p(p_vector)
+            eta = self._optimize_eta_given_p(p_vector, p_prev)
             
             # Step 6: 给定 η^h 和 P^h, 更新 U_s
             q_star = self.cournot_solver.compute_equilibrium(p_vector, eta)
@@ -102,54 +102,41 @@ class JointOptimization:
         
         return p_vector, eta, q_optimal, leader_utility
     
-    def _optimize_p_given_eta(self, eta, p_init):
+    def _optimize_p_given_eta(self, eta, p_pre):
         """
         给定η，优化概率分配p
-        基于Lemma 1的推导：p_n* = A/q_n * (1/(2λρx_n) - 1)
-        其中 A = Σp_nq_n
-        
-        :param eta: 固定的总支付
-        :param p_init: 初始概率分配
+        基于新的pn的解析式
+
         :return: 优化后的概率分配
         """
-        # 首先计算当前的q值
-        q_current = self.cournot_solver.compute_equilibrium(p_init, eta)
-        
-        # 计算A = Σp_nq_n
-        A = np.sum(p_init * q_current)
-        
-        # 获取数据拥有者的数据量 x_n (从q_max_vector获取)
-        x_n = self.q_max_vector
-        
-        # 使用公式 (3.15): p_n* = A/q_n * (1/(2λρx_n) - 1)
-        # 注意：这里需要迭代求解，因为A依赖于p，而p又依赖于A
-        p_new = p_init.copy()
+
+        lambda_rho = self.C  # λρ参数向量
+        p_new = p_pre.copy()  # 初始化当前轮概率
         
         for iteration in range(10):  # 最多迭代10次
-            # 计算当前的q值
-            q_current = self.cournot_solver.compute_equilibrium(p_new, eta)
-            
-            # 重新计算A
-            A = np.sum(p_new * q_current)
-            
-            if A <= 0:  # 防止除零
-                break
-                
-            # 使用解析公式计算新的p
-            # p_n* = A/q_n * (1/(2λρx_n) - 1)
-            # 这里假设λρ就是self.C（单位成本）
-            lambda_rho = self.C  # λρ参数
             
             p_analytical = np.zeros(self.N)
-            for n in range(self.N):
-                if q_current[n] > 0 and x_n[n] > 0:
-                    term = 1.0 / (2 * lambda_rho[n] * x_n[n]) - 1
-                    if term > 0:
-                        p_analytical[n] = (A / q_current[n]) * term
-                    else:
-                        p_analytical[n] = 0
+
+            # 预先计算所有p_i/p_pre_i的比值
+            ratio_vector = np.zeros(self.N)
+            for i in range(self.N):
+                if p_pre[i] > 1e-9:
+                    ratio_vector[i] = p_analytical[i] / p_pre[i]
                 else:
-                    p_analytical[n] = 0
+                    ratio_vector[i] = 0  # 避免除零
+
+            for n in range(self.N):
+                # 第一项：Θ/η
+                first_item = Theta / eta
+
+                # 第二项：[N²·λρ_n·p_pre_n]/[(N-1)·η]
+                second_item = (self.N ** 2 * lambda_rho[n] * p_pre[n]) / ((self.N - 1) * eta)
+
+                # 第三项：p_pre_n·(Σ_{i≠n} ratio_i)
+                # 使用预先计算的ratio_vector，排除当前n
+                third_item = p_pre[n] * (np.sum(ratio_vector) - ratio_vector[n])
+
+                p_analytical[n] = first_item - second_item - third_item
             
             # 归一化p使其满足约束 Σp_n = 1
             p_sum = np.sum(p_analytical)
@@ -166,41 +153,36 @@ class JointOptimization:
             
             # 检查收敛
             if np.linalg.norm(p_analytical - p_new) < 1e-6:
+                p_new = p_analytical.copy()
                 break
-                
+
+            # 6. 更新为下一轮的输入
             p_new = p_analytical.copy()
         
         return p_new
     
-    def _optimize_eta_given_p(self, p_vector):
+    def _optimize_eta_given_p(self, p_vector, p_prev):
         """
         给定p，优化总支付η
-        基于Lemma 2的推导：η* = A / (4λρx_n)
-        其中 A = Σp_nq_n
-        
-        :param p_vector: 固定的概率分配
+        基于新的η的解析式
+
         :return: 优化后的总支付
         """
-        # 使用初始eta计算q值
-        eta_init = 1.0
-        q_current = self.cournot_solver.compute_equilibrium(p_vector, eta_init)
-        
-        # 计算A = Σp_nq_n
-        A = np.sum(p_vector * q_current)
-        
-        # 获取数据拥有者的数据量 x_n
-        x_n = self.q_max_vector
-        lambda_rho = self.C  # λρ参数
-        
-        # 使用公式 (3.18): η* = A / (4λρx_n)
-        # 这里需要选择一个代表性的x_n值，或者使用加权平均
-        # 使用加权平均: Σ(p_n * x_n) / Σp_n
-        weighted_x = np.sum(p_vector * x_n) / np.sum(p_vector) if np.sum(p_vector) > 0 else np.mean(x_n)
-        weighted_lambda_rho = np.sum(p_vector * lambda_rho) / np.sum(p_vector) if np.sum(p_vector) > 0 else np.mean(lambda_rho)
-        
-        if A > 0 and weighted_lambda_rho > 0 and weighted_x > 0:
-            eta_analytical = A / (4 * weighted_lambda_rho * weighted_x)
-            
+        lambda_rho = self.C  # λρ参数向量
+        avg_lambda_rho = np.sum(lambda_rho) / self.N
+
+        # 预先计算所有p_i/p_pre_i的比值
+        ratio_vector = np.zeros(self.N)
+        for i in range(self.N):
+            if p_prev[i] > 1e-9:
+                ratio_vector[i] = p_vector[i] / p_prev[i]
+            else:
+                ratio_vector[i] = 0  # 避免除零
+
+        if (sum(ratio_vector) * (self.N - 1)) > 1e-9:
+
+            eta_analytical = Theta - (self.N * self.N * avg_lambda_rho) / (sum(ratio_vector) * (self.N - 1))
+
             # 确保eta为正数且合理
             eta_analytical = max(eta_analytical, 1e-6)
         else:
