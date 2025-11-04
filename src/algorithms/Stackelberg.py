@@ -157,7 +157,7 @@ class Stackelberg:
         UtilT.print_and_log(f"开始求解随机总支付eta={random_eta:.4f}(上限为{eta_max:.4f})下的Stackelberg博弈...")
         
         # 使用固定eta的求解方法
-        return self.solve_with_fixed_eta(random_eta, max_iterations, tolerance)
+        return self.solve_with_fixed_eta(eta_max * 0.5, max_iterations, tolerance)
 
     def solve_with_fixed_p(self, p_fixed):
         """
