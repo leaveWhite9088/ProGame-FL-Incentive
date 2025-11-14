@@ -59,6 +59,8 @@ class Stackelberg:
         # Algorithm 1 Step 2: 调用Algorithm 3(Joint Optimization)计算η*和P*
         # 这已经包含了将数据拥有者响应(通过Algorithm 2)嵌入到领导者优化中的过程
         p_star, eta_star, q_star, leader_utility = self.joint_optimizer.optimize()
+
+        print("Stackelberg pstart", p_star)
         
         # Algorithm 1 Step 3: 调用Algorithm 2(Embedded Cournot Subgame)计算Q*
         # 注：这一步已经在JointOptimization中完成，q_star即为结果

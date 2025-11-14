@@ -53,7 +53,10 @@ class JointOptimization:
         """
         # Algorithm 3 Step 1: 初始化 η^0, P^0
         eta = 1.0  # 初始总支付
-        p_vector = np.ones(self.N) / self.N  # 初始均匀概率分配
+        # p_vector = np.ones(self.N) / self.N  # 初始均匀概率分配
+
+        p_vector = np.random.rand(self.N)
+        p_vector = p_vector / np.sum(p_vector)  # 归一化，使其总和为 1
         
         # 记录历史值用于收敛判断
         eta_history = [eta]
@@ -69,6 +72,8 @@ class JointOptimization:
             
             # Step 4: 给定 η^(h-1), 更新 P^h
             p_vector = self._optimize_p_given_eta(eta, p_prev)
+
+            print("JointOptimization pvector", p_vector)
             
             # Step 5: 给定 P^(h-1), 更新 η^h
             eta = self._optimize_eta_given_p(p_vector, p_prev)
@@ -111,20 +116,29 @@ class JointOptimization:
         """
 
         lambda_rho = self.C  # λρ参数向量
-        p_new = p_pre.copy()  # 初始化当前轮概率
+
+        # 2. 这是我们将要迭代更新的向量，初始值是 p_pre
+        p_current = p_pre.copy()
         
         for iteration in range(10):  # 最多迭代10次
-            
+
+            # 3. 保存当前值，用于稍后的收敛检查
+            p_old = p_current.copy()
+
+            # 4. 初始化一个新的向量来存放计算结果
             p_analytical = np.zeros(self.N)
 
-            # 预先计算所有p_i/p_pre_i的比值
+            # 5. 【修正 1】:
+            #    计算 ratio_vector 必须基于上一次迭代的结果 (p_old)，
+            #    而不是一个全零向量。
             ratio_vector = np.zeros(self.N)
             for i in range(self.N):
-                if p_pre[i] > 1e-9:
-                    ratio_vector[i] = p_analytical[i] / p_pre[i]
+                if p_pre[i] > 1e-9:  # 分母 p_pre 是固定的
+                    ratio_vector[i] = p_old[i] / p_pre[i]
                 else:
-                    ratio_vector[i] = 0  # 避免除零
+                    ratio_vector[i] = 0
 
+            # 6. 现在 p_analytical[n] 的计算是有效的
             for n in range(self.N):
                 # 第一项：Θ/η
                 first_item = Theta / eta
@@ -133,33 +147,42 @@ class JointOptimization:
                 second_item = (self.N ** 2 * lambda_rho[n] * p_pre[n]) / ((self.N - 1) * eta)
 
                 # 第三项：p_pre_n·(Σ_{i≠n} ratio_i)
-                # 使用预先计算的ratio_vector，排除当前n
+                # 【修正 2】:
+                #    现在 ratio_vector 是基于 p_old 计算的，不再是全零
                 third_item = p_pre[n] * (np.sum(ratio_vector) - ratio_vector[n])
 
                 p_analytical[n] = first_item - second_item - third_item
-            
-            # 归一化p使其满足约束 Σp_n = 1
+
+            # 【新】在归一化之前，将所有负值 "分数" 裁剪为 0。
+            #    负的概率分数没有意义，应视为 0。
+            p_analytical = np.clip(p_analytical, 0, None)  # (min=0, max=无上限)
+
+            # 7. 归一化 p (防止负值导致 sum 为 0 或负)
             p_sum = np.sum(p_analytical)
-            if p_sum > 0:
+
+            print("JointOptimization p_sum", p_sum)
+
+            if p_sum > 1e-9:  # 检查 p_sum 是否为正
                 p_analytical = p_analytical / p_sum
             else:
                 p_analytical = np.ones(self.N) / self.N  # 回退到均匀分布
-            
-            # 确保所有p_n都在[0,1]范围内
-            p_analytical = np.clip(p_analytical, 0, 1)
-            
-            # 再次归一化
-            p_analytical = p_analytical / np.sum(p_analytical)
-            
-            # 检查收敛
-            if np.linalg.norm(p_analytical - p_new) < 1e-6:
-                p_new = p_analytical.copy()
+
+            # 10. 【修正 3】:
+            #     将 p_current 更新为刚刚计算出的 p_analytical
+
+            # 引入一个阻尼因子 (alpha)，例如 0.5
+            # 这使得 p_current 只向新计算的 p_analytical "移动" 一半
+            # 从而平滑振荡
+            alpha = 0.5
+            p_current = alpha * p_analytical + (1.0 - alpha) * p_old
+
+            # 11. 检查收敛: 比较新值 (p_current) 和旧值 (p_old)
+            if np.linalg.norm(p_current - p_old) < 1e-6:
                 break
 
-            # 6. 更新为下一轮的输入
-            p_new = p_analytical.copy()
-        
-        return p_new
+        print("JointOptimization p_current", p_current)
+
+        return p_current
     
     def _optimize_eta_given_p(self, p_vector, p_prev):
         """

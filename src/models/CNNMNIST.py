@@ -275,58 +275,43 @@ def update_model_with_parameters(model, parameters, test_loader, device='cpu', f
                                  model_save_path="../data/model/mnist_cnn"):
     """
     评估参数在模型上的表现，如果准确率提高或强制更新则应用这些参数
-    
+    (已修复 force_update 逻辑)
+
     :param model: 要更新的MNISTCNN模型
     :param parameters: 新的模型参数字典(平均参数)
     :param test_loader: 测试数据加载器
     :param device: 计算设备 ('cpu' 或 'cuda')
     :param force_update: 是否强制覆盖模型参数，默认为False
     :param model_save_path: 模型保存路径，如果为None则不保存
-    :return: 更新后的准确率
+    :return: 最终模型的准确率 (可能是新的也可能是旧的)
     """
-    if force_update:
-        UtilMNIST.print_and_log("强制更新")
 
-        # 创建一个临时模型来评估新参数的性能
-        temp_model = MNISTCNN().to(device)
-        temp_model.set_parameters(parameters)
-
-        # 评估新参数的准确率
-        UtilMNIST.print_and_log("评估平均参数的准确率")
-        new_accuracy = temp_model.evaluate(test_loader, device)
-
-        UtilMNIST.print_and_log(
-            f"新准确率 ({new_accuracy * 100:.2f}%) 优于当前准确率 ({model.acc * 100:.2f}%)，更新模型")
-
-        # 更新模型参数
-        model.set_parameters(parameters)
-        model.acc = new_accuracy
-
-        # 如果提供了保存路径，则保存模型
-        if model_save_path:
-            model.save_model(model_save_path)
-            UtilMNIST.print_and_log(f"更新后的模型已保存至: {model_save_path}")
-
-        return new_accuracy
-
-    # 如果模型未初始化准确率，先评估获取基准准确率
+    # --- 步骤 1: 确保 "当前" 准确率 (model.acc) 已被初始化 ---
+    # 无论 force_update 是 Ture 还是 False, 这一步都必须先执行
     if not model.isInit:
         UtilMNIST.print_and_log("评估获取基准准确率")
-        model.acc = model.evaluate(test_loader, device)
+        model.acc = model.evaluate(test_loader, device)  # 运行评估以获取当前 acc
         model.isInit = True
         UtilMNIST.print_and_log(f"初始准确率: {model.acc * 100:.2f}%")
 
-    # 创建一个临时模型来评估新参数的性能
+    # --- 步骤 2: 评估 "新" 参数的准确率 ---
     temp_model = MNISTCNN().to(device)
     temp_model.set_parameters(parameters)
-
-    # 评估新参数的准确率
     UtilMNIST.print_and_log("评估平均参数的准确率")
     new_accuracy = temp_model.evaluate(test_loader, device)
 
-    # 决定是否更新模型参数
-    if new_accuracy > model.acc:
-        UtilMNIST.print_and_log(f"新准确率 ({new_accuracy * 100:.2f}%) 优于当前准确率 ({model.acc * 100:.2f}%)，更新模型")
+    # --- 步骤 3: 决策 ---
+    # 决策条件：
+    # 1. 强制更新 (force_update == True)
+    # 2. 新的更好 (new_accuracy > model.acc)
+    if force_update or new_accuracy > model.acc:
+
+        # 打印不同的日志消息
+        if force_update and not (new_accuracy > model.acc):
+            UtilMNIST.print_and_log(f"强制更新：新准确率 ({new_accuracy * 100:.2f}%)，原准确率 ({model.acc * 100:.2f}%)")
+        else:
+            UtilMNIST.print_and_log(
+                f"新准确率 ({new_accuracy * 100:.2f}%) 优于当前准确率 ({model.acc * 100:.2f}%)，更新模型")
 
         # 更新模型参数
         model.set_parameters(parameters)
@@ -336,11 +321,15 @@ def update_model_with_parameters(model, parameters, test_loader, device='cpu', f
         if model_save_path:
             model.save_model(model_save_path)
             UtilMNIST.print_and_log(f"更新后的模型已保存至: {model_save_path}")
+
+        return new_accuracy  # 返回新的准确率
+
     else:
+        # 这种情况 (force_update=False AND new_accuracy <= model.acc)
         UtilMNIST.print_and_log(
             f"新准确率 ({new_accuracy * 100:.2f}%) 不优于当前准确率 ({model.acc * 100:.2f}%)，保持原模型")
 
-    return model.acc
+        return model.acc  # 返回旧的准确率
 
 
 # 动态调整轮次的评价函数

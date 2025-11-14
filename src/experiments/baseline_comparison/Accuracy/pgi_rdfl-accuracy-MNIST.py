@@ -195,8 +195,14 @@ def calculate_optimal_payment_and_data(avg_f_list, last_xn_list):
     # x_opt = [a / b for a, b in zip(q_star, avg_f_list)]
     x_opt = UtilMNIST.power_transform_then_min_max_normalize(q_star)
 
+    # test p_star
+    print("pgi_rdfl-accuracy-MNIST pstar: ", p_star)
+
     # 将pn_list(p_star)做归一化
     p_star = UtilMNIST.power_transform_then_min_max_normalize(p_star)
+
+    # test p_star
+    print("pgi_rdfl-accuracy-MNIST pstar normalized: ", p_star)
 
     return UtilMNIST.compare_elements(x_opt, last_xn_list), p_star, eta_star, leader_utility, follower_utilities / N
 
