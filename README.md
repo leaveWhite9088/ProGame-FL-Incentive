@@ -212,7 +212,7 @@ python -m src.experiments.baseline_comparison.Utility.fixed-utility-CIFAR10 --ad
 # Random utility
 python -m src.experiments.baseline_comparison.Utility.random-utility-CIFAR10 --adjustment_literation -1 --parent_path comparison_experiments --util CIFAR10
 # TiFLCS-MARP utility
-python -m src.experiments.tiflcs-marp.Utility.tiflcs-marp_utility-MNIST --adjustment_literation -1 --parent_path comparison_experiments --util CIFAR10
+python -m src.experiments.tiflcs-marp.Utility.tiflcs-marp_utility-CIFAR10 --adjustment_literation -1 --parent_path comparison_experiments --util CIFAR10
 
 # Baseline accuracy
 python -m src.experiments.baseline_comparison.Accuracy.baseline_accuracy-CIFAR10 --adjustment_literation 100 --parent_path comparison_experiments --util CIFAR10
@@ -223,7 +223,7 @@ python -m src.experiments.baseline_comparison.Accuracy.fixed-accuracy-CIFAR10 --
 # Random accuracy
 python -m src.experiments.baseline_comparison.Accuracy.random-accuracy-CIFAR10 --adjustment_literation 100 --parent_path comparison_experiments --util CIFAR10
 # TiFLCS-MARP accuracy
-python -m src.experiments.tiflcs-marp.Accuracy.tiflcs-marp_accuracy-MNIST --adjustment_literation 100 --parent_path comparison_experiments --util CIFAR10
+python -m src.experiments.tiflcs-marp.Accuracy.tiflcs-marp_accuracy-CIFAR10 --adjustment_literation 100 --parent_path comparison_experiments --util CIFAR10
 ```
 
 #### CIFAR-100 Dataset
@@ -237,7 +237,7 @@ python -m src.experiments.baseline_comparison.Utility.fixed-utility-CIFAR100 --a
 # Random utility
 python -m src.experiments.baseline_comparison.Utility.random-utility-CIFAR100 --adjustment_literation -1 --parent_path comparison_experiments --util CIFAR100
 # TiFLCS-MARP utility
-python -m src.experiments.tiflcs-marp.Utility.tiflcs-marp_utility-MNIST --adjustment_literation -1 --parent_path comparison_experiments --util CIFAR100
+python -m src.experiments.tiflcs-marp.Utility.tiflcs-marp_utility-CIFAR100 --adjustment_literation -1 --parent_path comparison_experiments --util CIFAR100
 
 # Baseline accuracy
 python -m src.experiments.baseline_comparison.Accuracy.baseline_accuracy-CIFAR100 --adjustment_literation 100 --parent_path comparison_experiments --util CIFAR100
@@ -248,7 +248,7 @@ python -m src.experiments.baseline_comparison.Accuracy.fixed-accuracy-CIFAR100 -
 # Random accuracy
 python -m src.experiments.baseline_comparison.Accuracy.random-accuracy-CIFAR100 --adjustment_literation 100 --parent_path comparison_experiments --util CIFAR100
 # TiFLCS-MARP accuracy
-python -m src.experiments.tiflcs-marp.Accuracy.tiflcs-marp_accuracy-MNIST --adjustment_literation 100 --parent_path comparison_experiments --util CIFAR100
+python -m src.experiments.tiflcs-marp.Accuracy.tiflcs-marp_accuracy-CIFAR100 --adjustment_literation 100 --parent_path comparison_experiments --util CIFAR100
 ```
 
 #### MINI TEST MNIST

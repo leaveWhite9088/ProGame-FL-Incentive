@@ -487,7 +487,7 @@ if __name__ == "__main__":
             UtilMNIST.print_and_log(f"----- literation {literation + 1}: 模型训练 -----")
             avg_f_list, new_accuracy = train_model_with_cpc(matching, ComputingCenters, test_images, test_labels,
                                                             literation, avg_f_list, adjustment_literation,
-                                                            force_update=True)
+                                                            force_update=False)
             # 构建精准度列表
             accuracy_list.append(new_accuracy)
             UtilMNIST.print_and_log(f"accuracy_list: {accuracy_list}")

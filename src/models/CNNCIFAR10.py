@@ -308,53 +308,37 @@ def update_model_with_parameters(model, parameters, test_loader, device='cpu', f
     :param device: 计算设备 ('cpu' 或 'cuda')
     :param force_update: 是否强制覆盖模型参数，默认为False
     :param model_save_path: 模型保存路径，如果为None则不保存
-    :return: 更新后模型的官方准确率 (The official accuracy of the model after the update)
+    :return: 最终模型的准确率 (可能是新的也可能是旧的)
     """
-    if force_update:
-        UtilCIFAR10.print_and_log(parent_path, "强制更新")
 
-        # 创建一个临时模型来评估新参数的性能
-        temp_model = CIFAR10CNN().to(device)
-        temp_model.set_parameters(parameters)
-
-        # 评估新参数的准确率
-        UtilCIFAR10.print_and_log(parent_path, "评估平均参数的准确率")
-        new_accuracy = temp_model.evaluate(test_loader, device)
-
-        UtilCIFAR10.print_and_log(parent_path,
-                                  f"新准确率 ({new_accuracy * 100:.2f}%) 优于当前准确率 ({model.acc * 100:.2f}%)，更新模型")
-
-        # 更新模型参数
-        model.set_parameters(parameters)
-        model.acc = new_accuracy
-
-        # 如果提供了保存路径，则保存模型
-        if model_save_path:
-            model.save_model(model_save_path)
-            UtilCIFAR10.print_and_log(parent_path, f"更新后的模型已保存至: {model_save_path}")
-
-        # 【修改点】: 无论如何，返回模型对象中当前存储的 acc 值
-        return model.acc
-
-    # 如果模型未初始化准确率，先评估获取基准准确率
+    # --- 步骤 1: 确保 "当前" 准确率 (model.acc) 已被初始化 ---
+    # 无论 force_update 是 Ture 还是 False, 这一步都必须先执行
     if not model.isInit:
+        # 注意: 已移除对 'parent_path' 的依赖
         UtilCIFAR10.print_and_log(parent_path, "评估获取基准准确率")
-        model.acc = model.evaluate(test_loader, device)
+        model.acc = model.evaluate(test_loader, device)  # 运行评估以获取当前 acc
         model.isInit = True
         UtilCIFAR10.print_and_log(parent_path, f"初始准确率: {model.acc * 100:.2f}%")
 
-    # 创建一个临时模型来评估新参数的性能
+    # --- 步骤 2: 评估 "新" 参数的准确率 ---
+    # (此步骤仅执行一次)
     temp_model = CIFAR10CNN().to(device)
     temp_model.set_parameters(parameters)
-
-    # 评估新参数的准确率
     UtilCIFAR10.print_and_log(parent_path, "评估平均参数的准确率")
     new_accuracy = temp_model.evaluate(test_loader, device)
 
-    # 决定是否更新模型参数
-    if new_accuracy > model.acc:
-        UtilCIFAR10.print_and_log(parent_path,
-                                  f"新准确率 ({new_accuracy * 100:.2f}%) 优于当前准确率 ({model.acc * 100:.2f}%)，更新模型")
+    # --- 步骤 3: 决策 ---
+    # 决策条件：
+    # 1. 强制更新 (force_update == True)
+    # 2. 新的更好 (new_accuracy > model.acc)
+    if force_update or new_accuracy > model.acc:
+
+        # 打印不同的日志消息
+        if force_update and not (new_accuracy > model.acc):
+            UtilCIFAR10.print_and_log(parent_path,f"强制更新：新准确率 ({new_accuracy * 100:.2f}%)，原准确率 ({model.acc * 100:.2f}%)")
+        else:
+            UtilCIFAR10.print_and_log(parent_path,
+                f"新准确率 ({new_accuracy * 100:.2f}%) 优于当前准确率 ({model.acc * 100:.2f}%)，更新模型")
 
         # 更新模型参数
         model.set_parameters(parameters)
@@ -363,12 +347,16 @@ def update_model_with_parameters(model, parameters, test_loader, device='cpu', f
         # 如果提供了保存路径，则保存模型
         if model_save_path:
             model.save_model(model_save_path)
-            UtilCIFAR10.print_and_log(parent_path, f"更新后的模型已保存至: {model_save_path}")
+            UtilCIFAR10.print_and_log(parent_path,f"更新后的模型已保存至: {model_save_path}")
+
+        return new_accuracy  # 返回新的准确率
+
     else:
+        # 这种情况 (force_update=False AND new_accuracy <= model.acc)
         UtilCIFAR10.print_and_log(parent_path,
-                                  f"新准确率 ({new_accuracy * 100:.2f}%) 不优于当前准确率 ({model.acc * 100:.2f}%)，保持原模型")
-    # 这确保了返回值始终是您想要的“最终精度”。
-    return model.acc
+            f"新准确率 ({new_accuracy * 100:.2f}%) 不优于当前准确率 ({model.acc * 100:.2f}%)，保持原模型")
+
+        return model.acc  # 返回旧的准确率
 
 # 动态调整轮次的评价函数
 def evaluate_data_for_dynamic_adjustment(train_loader, test_loader, num_epochs=5, device='cpu', lr=1e-5,
